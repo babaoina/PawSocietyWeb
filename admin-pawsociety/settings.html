@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PawSociety - Admin Settings</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: #F5E6D3;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: #7A4F2B;
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            height: 70px;
+        }
+
+        .logo h1 {
+            font-size: 24px;
+        }
+
+        .admin-profile {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .admin-name {
+            text-align: right;
+        }
+
+        .admin-name .name {
+            font-weight: bold;
+        }
+
+        .admin-name .role {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            background: #B88B4A;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .avatar:hover {
+            background: #DAA520;
+            transform: scale(1.05);
+        }
+
+        /* Dropdown Menu */
+        .dropdown-menu {
+            position: absolute;
+            top: 60px;
+            right: 0;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+            width: 150px;
+            display: none;
+            z-index: 1001;
+            overflow: hidden;
+            animation: slideDown 0.3s ease;
+        }
+
+        .dropdown-menu.show {
+            display: block;
+        }
+
+        .dropdown-item {
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #333;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .dropdown-item:hover {
+            background: #F5E6D3;
+            color: #7A4F2B;
+        }
+
+        .dropdown-item.logout:hover {
+            background: #FFEBEE;
+            color: #F44336;
+        }
+
+        .dropdown-icon {
+            font-size: 18px;
+            width: 24px;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+            padding-top: 70px;
+        }
+
+        .sidebar {
+            width: 250px;
+            background: white;
+            padding: 20px 0;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.05);
+            position: fixed;
+            height: calc(100vh - 70px);
+            overflow-y: auto;
+        }
+
+        .menu-item {
+            padding: 12px 25px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-left: 3px solid transparent;
+        }
+
+        .menu-item:hover {
+            background: #F5E6D3;
+            color: #7A4F2B;
+        }
+
+        .menu-item.active {
+            background: #F5E6D3;
+            color: #7A4F2B;
+            border-left-color: #7A4F2B;
+            font-weight: bold;
+        }
+
+        .menu-icon {
+            font-size: 20px;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 30px;
+            margin-left: 250px;
+        }
+
+        .page-title {
+            margin-bottom: 30px;
+        }
+
+        .page-title h2 {
+            color: #7A4F2B;
+            font-size: 28px;
+        }
+
+        .settings-nav {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #F0F0F0;
+            padding-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .settings-tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 5px 5px 0 0;
+            color: #666;
+            transition: all 0.3s;
+        }
+
+        .settings-tab:hover {
+            background: #F5E6D3;
+            color: #7A4F2B;
+        }
+
+        .settings-tab.active {
+            background: #7A4F2B;
+            color: white;
+        }
+
+        .settings-section {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            display: block;
+        }
+
+        .settings-group {
+            margin-bottom: 30px;
+            padding-bottom: 30px;
+            border-bottom: 1px solid #F0F0F0;
+        }
+
+        .settings-group:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .settings-group h3 {
+            color: #7A4F2B;
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .setting-info {
+            flex: 1;
+        }
+
+        .setting-info label {
+            display: block;
+            color: #333;
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .setting-info .description {
+            color: #999;
+            font-size: 13px;
+        }
+
+        .setting-control {
+            width: 300px;
+        }
+
+        .setting-control input, .setting-control select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #F0F0F0;
+            border-radius: 5px;
+            font-size: 14px;
+            height: 42px;
+        }
+
+        .toggle-switch {
+            width: 50px;
+            height: 24px;
+            background: #F0F0F0;
+            border-radius: 12px;
+            position: relative;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .toggle-switch.active {
+            background: #7A4F2B;
+        }
+
+        .toggle-slider {
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            transition: left 0.3s;
+        }
+
+        .toggle-switch.active .toggle-slider {
+            left: 28px;
+        }
+
+        .save-button {
+            background: #7A4F2B;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            margin-top: 20px;
+            transition: all 0.3s;
+        }
+
+        .save-button:hover {
+            background: #B88B4A;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .danger-zone {
+            background: #FFF1F0;
+            border: 1px solid #F44336;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+
+        .danger-zone h4 {
+            color: #F44336;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .danger-zone p {
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .danger-button {
+            background: #F44336;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            transition: all 0.3s;
+        }
+
+        .danger-button:hover {
+            background: #D32F2F;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                position: relative;
+                height: auto;
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .container {
+                flex-direction: column;
+            }
+            
+            .setting-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .setting-control {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <h1>PawSociety <span>Admin</span></h1>
+        </div>
+        <div class="admin-profile" id="adminProfile">
+            <div class="admin-name">
+                <div class="name" id="adminName">Admin User</div>
+                <div class="role" id="adminRole">Super Admin</div>
+            </div>
+            <div class="avatar" id="avatarBtn">A</div>
+            
+            <!-- Dropdown Menu - ONLY LOGOUT -->
+            <div class="dropdown-menu" id="dropdownMenu">
+                <div class="dropdown-item logout" onclick="logout()">
+                    <span class="dropdown-icon">🚪</span>
+                    <span>Logout</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="sidebar">
+            <!-- REARRANGED MENU: Dashboard → Posts → Users → Reports → Settings -->
+            <div class="menu-item" onclick="window.location.href='dashboard.html'">
+                <span class="menu-icon">📊</span>
+                <span>Dashboard</span>
+            </div>
+            <div class="menu-item" onclick="window.location.href='posts.html'">
+                <span class="menu-icon">📝</span>
+                <span>Posts</span>
+            </div>
+            <div class="menu-item" onclick="window.location.href='users.html'">
+                <span class="menu-icon">👥</span>
+                <span>Users</span>
+            </div>
+            <div class="menu-item" onclick="window.location.href='reports.html'">
+                <span class="menu-icon">📈</span>
+                <span>Reports</span>
+            </div>
+            <div class="menu-item active" onclick="window.location.href='settings.html'">
+                <span class="menu-icon">⚙️</span>
+                <span>Settings</span>
+            </div>
+            <!-- LOGOUT REMOVED FROM SIDEBAR -->
+        </div>
+
+        <div class="main-content">
+            <div class="page-title">
+                <h2>Admin Settings</h2>
+            </div>
+
+            <div class="settings-nav">
+                <div class="settings-tab active" onclick="switchTab('general')">General</div>
+                <div class="settings-tab" onclick="switchTab('security')">Security</div>
+                <div class="settings-tab" onclick="switchTab('notifications')">Notifications</div>
+                <div class="settings-tab" onclick="switchTab('moderation')">Moderation</div>
+                <div class="settings-tab" onclick="switchTab('api')">API</div>
+            </div>
+
+            <!-- General Settings -->
+            <div class="settings-section" id="general-settings">
+                <div class="settings-group">
+                    <h3>General Settings</h3>
+                    
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <label>Site Name</label>
+                            <div class="description">The name of your website</div>
+                        </div>
+                        <div class="setting-control">
+                            <input type="text" value="PawSociety" id="siteName">
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <label>Site Description</label>
+                            <div class="description">Brief description of your site</div>
+                        </div>
+                        <div class="setting-control">
+                            <input type="text" value="Because Every Pet Deserves a Home" id="siteDescription">
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <label>Contact Email</label>
+                            <div class="description">Primary contact email address</div>
+                        </div>
+                        <div class="setting-control">
+                            <input type="email" value="admin@pawsociety.com" id="contactEmail">
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <label>Timezone</label>
+                            <div class="description">Default timezone for the site</div>
+                        </div>
+                        <div class="setting-control">
+                            <select id="timezone">
+                                <option value="UTC">UTC</option>
+                                <option value="EST">Eastern Time</option>
+                                <option value="PST" selected>Pacific Time</option>
+                                <option value="GMT">GMT</option>
+                                <option value="CST">Central Time</option>
+                                <option value="MST">Mountain Time</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h3>Registration Settings</h3>
+                    
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <label>Allow New Registrations</label>
+                            <div class="description">Allow new users to register</div>
+                        </div>
+                        <div class="setting-control">
+                            <div class="toggle-switch active" onclick="toggleSwitch(this)" id="allowRegistration">
+                                <div class="toggle-slider"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <label>Email Verification</label>
+                            <div class="description">Require email verification for new accounts</div>
+                        </div>
+                        <div class="setting-control">
+                            <div class="toggle-switch active" onclick="toggleSwitch(this)" id="emailVerification">
+                                <div class="toggle-slider"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <label>Default User Role</label>
+                            <div class="description">Default role for new users</div>
+                        </div>
+                        <div class="setting-control">
+                            <select id="defaultRole">
+                                <option value="user" selected>User</option>
+                                <option value="moderator">Moderator</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="save-button" onclick="saveSettings()">Save Changes</button>
+            </div>
+
+            <!-- Security Settings -->
+            <div class="settings-section" id="security-settings" style="display: none;">
+                <div class="settings-group">
+                    <h3>Security Settings</h3>
+                    
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <label>Two-Factor Authentication</label>
+                            <div class="description">Require 2FA for admin accounts</div>
+                        </div>
+                        <div class="setting-control">
+                            <div class="toggle-switch" onclick="toggleSwitch(this)" id="twoFactorAuth">
+                                <div class="toggle-slider"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <label>Session Timeout</label>
+                            <div class="description">Minutes before session expires</div>
+                        </div>
+                        <div class="setting-control">
+                            <input type="number" value="120" min="5" max="1440" id="sessionTimeout">
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <label>Password Complexity</label>
+                            <div class="description">Minimum password requirements</div>
+                        </div>
+                        <div class="setting-control">
+                            <select id="passwordComplexity">
+                                <option value="basic">Basic (6+ characters)</option>
+                                <option value="medium" selected>Medium (8+ chars, 1 number)</option>
+                                <option value="strong">Strong (10+ chars, mixed case, numbers, symbols)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <label>Login Attempts</label>
+                            <div class="description">Max login attempts before lockout</div>
+                        </div>
+                        <div class="setting-control">
+                            <input type="number" value="5" min="1" max="10" id="maxLoginAttempts">
+                        </div>
+                    </div>
+                </div>
+
+                <button class="save-button" onclick="saveSettings()">Save Changes</button>
+            </div>
+
+            <!-- Notification Settings -->
+            <div class="settings-section" id="notification-settings" style="display: none;">
+                <div class="settings-group">
+                    <h3>Email Notifications</h3>
+                    
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <label>New User Registration</label>
+                            <div class="description">Send email when new user registers</div>
+                        </div>
+                        <div class="setting-control">
+                            <div class="toggle-switch active" onclick="toggleSwitch(this)" id="notifyNewUser">
+                                <div class="toggle-slider"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <label>New Post Created</label>
+                            <div class="description">Send email when new post is created</div>
+                        </div>
+                        <div class="setting-control">
+                            <div class="toggle-switch active" onclick="toggleSwitch(this)" id="notifyNewPost">
+                                <div class="toggle-slider"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <label>Reported Content</label>
+                            <div class="description">Send email when content is reported</div>
+                        </div>
+                        <div class="setting-control">
+                            <div class="toggle-switch active" onclick="toggleSwitch(this)" id="notifyReported">
+                                <div class="toggle-slider"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <label>Daily Summary</label>
+                            <div class="description">Receive daily activity summary</div>
+                        </div>
+                        <div class="setting-control">
+                            <div class="toggle-switch" onclick="toggleSwitch(this)" id="dailySummary">
+                                <div class="toggle-slider"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="save-button" onclick="saveSettings()">Save Changes</button>
+            </div>
+
+            <!-- Moderation Settings -->
+            <div class="settings-section" id="moderation-settings" style="display: none;">
+                <div class="settings-group">
+                    <h3>Content Moderation</h3>
+                    
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <label>Auto-Approve Posts</label>
+                            <div class="description">Automatically approve new posts</div>
+                        </div>
+                        <div class="setting-control">
+                            <div class="toggle-switch" onclick="toggleSwitch(this)" id="autoApprovePosts">
+                                <div class="toggle-slider"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <label>Require Post Approval</label>
+                            <div class="description">Posts need admin approval before publishing</div>
+                        </div>
+                        <div class="setting-control">
+                            <div class="toggle-switch active" onclick="toggleSwitch(this)" id="requireApproval">
+                                <div class="toggle-slider"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <label>Flagged Content Threshold</label>
+                            <div class="description">Number of flags before auto-hide</div>
+                        </div>
+                        <div class="setting-control">
+                            <input type="number" value="3" min="1" max="10" id="flagThreshold">
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <label>Profanity Filter</label>
+                            <div class="description">Automatically filter profanity in posts</div>
+                        </div>
+                        <div class="setting-control">
+                            <div class="toggle-switch active" onclick="toggleSwitch(this)" id="profanityFilter">
+                                <div class="toggle-slider"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="save-button" onclick="saveSettings()">Save Changes</button>
+            </div>
+
+            <!-- API Settings -->
+            <div class="settings-section" id="api-settings" style="display: none;">
+                <div class="settings-group">
+                    <h3>API Settings</h3>
+                    
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <label>API Status</label>
+                            <div class="description">Enable/disable API access</div>
+                        </div>
+                        <div class="setting-control">
+                            <div class="toggle-switch active" onclick="toggleSwitch(this)" id="apiStatus">
+                                <div class="toggle-slider"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <label>API Key</label>
+                            <div class="description">Your API access key</div>
+                        </div>
+                        <div class="setting-control">
+                            <input type="text" value="pk_live_xxxxxxxxxxxxx" readonly id="apiKey">
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <label>Rate Limiting</label>
+                            <div class="description">Requests per minute per IP</div>
+                        </div>
+                        <div class="setting-control">
+                            <input type="number" value="60" min="1" max="1000" id="rateLimit">
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <label>API Documentation</label>
+                            <div class="description">Access API documentation</div>
+                        </div>
+                        <div class="setting-control">
+                            <button class="btn" onclick="window.open('/api-docs', '_blank')" style="padding: 8px 15px; background: #7A4F2B; color: white; border: none; border-radius: 5px; cursor: pointer;">View Docs</button>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="save-button" onclick="saveSettings()">Save Changes</button>
+            </div>
+
+            <div class="danger-zone">
+                <h4>⚠️ Danger Zone</h4>
+                <p>These actions are irreversible. Please proceed with caution.</p>
+                <button class="danger-button" onclick="clearCache()">Clear System Cache</button>
+                <button class="danger-button" onclick="resetSettings()">Reset All Settings</button>
+                <button class="danger-button" onclick="deleteAllData()" style="background: #F44336;">Delete All Data</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check authentication
+        if (!localStorage.getItem('adminToken')) {
+            window.location.href = 'index.html';
+        }
+
+        // Toggle dropdown menu
+        const avatarBtn = document.getElementById('avatarBtn');
+        const dropdownMenu = document.getElementById('dropdownMenu');
+
+        avatarBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            dropdownMenu.classList.toggle('show');
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!avatarBtn.contains(e.target) && !dropdownMenu.contains(e.target)) {
+                dropdownMenu.classList.remove('show');
+            }
+        });
+
+        // Tab switching function
+        function switchTab(tabName) {
+            // Hide all sections
+            document.querySelectorAll('.settings-section').forEach(section => {
+                section.style.display = 'none';
+            });
+            
+            // Show selected section
+            const section = document.getElementById(tabName + '-settings');
+            if (section) {
+                section.style.display = 'block';
+            }
+            
+            // Update tab styling
+            document.querySelectorAll('.settings-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Find and activate the clicked tab
+            event.target.classList.add('active');
+        }
+
+        // Toggle switch function
+        function toggleSwitch(element) {
+            element.classList.toggle('active');
+        }
+
+        // Load settings from API
+        async function loadSettings() {
+            try {
+                const token = localStorage.getItem('adminToken');
+                const response = await fetch('http://localhost:3000/api/admin/settings', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const settings = await response.json();
+                    
+                    // Update form fields
+                    document.getElementById('siteName').value = settings.siteName || 'PawSociety';
+                    document.getElementById('siteDescription').value = settings.siteDescription || 'Because Every Pet Deserves a Home';
+                    document.getElementById('contactEmail').value = settings.contactEmail || 'admin@pawsociety.com';
+                    document.getElementById('timezone').value = settings.timezone || 'PST';
+                    document.getElementById('defaultRole').value = settings.defaultRole || 'user';
+                    document.getElementById('sessionTimeout').value = settings.sessionTimeout || 120;
+                    
+                    // Update toggle switches
+                    updateToggle('allowRegistration', settings.allowRegistration);
+                    updateToggle('emailVerification', settings.emailVerification);
+                    updateToggle('twoFactorAuth', settings.twoFactorAuth);
+                    updateToggle('autoApprovePosts', settings.autoApprovePosts);
+                    updateToggle('profanityFilter', settings.profanityFilter);
+                }
+            } catch (error) {
+                console.error('Failed to load settings:', error);
+            }
+        }
+
+        function updateToggle(id, value) {
+            const element = document.getElementById(id);
+            if (element) {
+                if (value) {
+                    element.classList.add('active');
+                } else {
+                    element.classList.remove('active');
+                }
+            }
+        }
+
+        // Save settings
+        async function saveSettings() {
+            const settings = {
+                siteName: document.getElementById('siteName')?.value || 'PawSociety',
+                siteDescription: document.getElementById('siteDescription')?.value || '',
+                contactEmail: document.getElementById('contactEmail')?.value || '',
+                timezone: document.getElementById('timezone')?.value || 'PST',
+                allowRegistration: document.getElementById('allowRegistration')?.classList.contains('active') || false,
+                emailVerification: document.getElementById('emailVerification')?.classList.contains('active') || false,
+                defaultRole: document.getElementById('defaultRole')?.value || 'user',
+                twoFactorAuth: document.getElementById('twoFactorAuth')?.classList.contains('active') || false,
+                sessionTimeout: parseInt(document.getElementById('sessionTimeout')?.value) || 120,
+                autoApprovePosts: document.getElementById('autoApprovePosts')?.classList.contains('active') || false,
+                profanityFilter: document.getElementById('profanityFilter')?.classList.contains('active') || false
+            };
+            
+            try {
+                const token = localStorage.getItem('adminToken');
+                const response = await fetch('http://localhost:3000/api/admin/settings', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(settings)
+                });
+                
+                if (response.ok) {
+                    alert('Settings saved successfully!');
+                } else {
+                    alert('Failed to save settings');
+                }
+            } catch (error) {
+                console.error('Failed to save settings:', error);
+                alert('Failed to save settings');
+            }
+        }
+
+        // Danger zone functions
+        function clearCache() {
+            if (confirm('Are you sure you want to clear the system cache?')) {
+                alert('Cache cleared successfully! (Demo only)');
+            }
+        }
+
+        function resetSettings() {
+            if (confirm('Are you sure you want to reset all settings to default?')) {
+                // Reset form fields to defaults
+                document.getElementById('siteName').value = 'PawSociety';
+                document.getElementById('siteDescription').value = 'Because Every Pet Deserves a Home';
+                document.getElementById('contactEmail').value = 'admin@pawsociety.com';
+                document.getElementById('timezone').value = 'PST';
+                document.getElementById('defaultRole').value = 'user';
+                document.getElementById('sessionTimeout').value = '120';
+                
+                // Reset toggles
+                document.getElementById('allowRegistration').classList.add('active');
+                document.getElementById('emailVerification').classList.add('active');
+                document.getElementById('twoFactorAuth').classList.remove('active');
+                document.getElementById('autoApprovePosts').classList.remove('active');
+                document.getElementById('profanityFilter').classList.add('active');
+                
+                alert('Settings reset to default!');
+            }
+        }
+
+        async function deleteAllData() {
+            if (confirm('⚠️ WARNING: This will delete ALL non-admin data. Are you ABSOLUTELY sure?')) {
+                const confirmText = prompt('Type "DELETE" to confirm:');
+                if (confirmText === 'DELETE') {
+                    try {
+                        const token = localStorage.getItem('adminToken');
+                        const response = await fetch('http://localhost:3000/api/admin/clear-all-data', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+                        
+                        if (response.ok) {
+                            alert('All non-admin data has been cleared.');
+                        } else {
+                            alert('Failed to clear data');
+                        }
+                    } catch (error) {
+                        console.error('Failed to clear data:', error);
+                        alert('Failed to clear data');
+                    }
+                }
+            }
+        }
+
+        // Logout function
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                localStorage.removeItem('adminToken');
+                localStorage.removeItem('adminUser');
+                window.location.href = 'index.html';
+            }
+        }
+
+        // Load settings on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSettings();
+        });
+    </script>
+</body>
+</html>
