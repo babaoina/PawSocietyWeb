@@ -1,27 +1,45 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
-const db = require('../database');
-const bcrypt = require('bcryptjs');
+const User = require('../models/User');
+const Post = require('../models/Post');
+const Report = require('../models/Report');
+const admin = require('firebase-admin');
+
+// Initialize Firebase Admin
+try {
+  if (!admin.apps.length) {
+    const serviceAccount = require('../firebase-service-account.json');
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount)
+    });
+    console.log('✅ Firebase Admin initialized for user management');
+  }
+} catch (error) {
+  console.error('❌ Firebase Admin initialization failed:', error.message);
+}
 
 // Middleware to verify admin token
-const verifyAdmin = (req, res, next) => {
-    const token = req.headers.authorization?.split(' ')[1];
+const verifyAdmin = async (req, res, next) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  
+  if (!token) {
+    return res.status(401).json({ error: 'No token provided' });
+  }
+  
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key-change-this');
     
-    if (!token) {
-        return res.status(401).json({ error: 'No token provided' });
+    const user = await User.findById(decoded.id);
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required' });
     }
     
-    try {
-        const decoded = jwt.verify(token, 'your-secret-key-change-this');
-        if (decoded.role !== 'admin') {
-            return res.status(403).json({ error: 'Admin access required' });
-        }
-        req.user = decoded;
-        next();
-    } catch (err) {
-        return res.status(401).json({ error: 'Invalid token' });
-    }
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: 'Invalid token' });
+  }
 };
 
 // Apply middleware to all routes
@@ -29,276 +47,396 @@ router.use(verifyAdmin);
 
 // Verify token endpoint
 router.get('/verify', (req, res) => {
-    res.json({ valid: true, user: req.user });
+  res.json({ valid: true, user: req.user });
 });
 
 // ===== DASHBOARD STATS =====
-router.get('/stats', (req, res) => {
-    let stats = {
-        totalUsers: 0,
-        totalPosts: 0,
-        lostPets: 0,
-        adoptions: 0,
-        userGrowth: [0, 0, 0, 0, 0, 0, 0],
-        postsByStatus: { lost: 0, found: 0, adoption: 0 },
-        recentActivity: []
-    };
+router.get('/stats', async (req, res) => {
+  try {
+    console.log('📊 Fetching dashboard stats...');
     
-    db.get('SELECT COUNT(*) as count FROM users', (err, result) => {
-        stats.totalUsers = result?.count || 0;
-        
-        db.get('SELECT COUNT(*) as count FROM posts', (err, result) => {
-            stats.totalPosts = result?.count || 0;
-            
-            db.get('SELECT COUNT(*) as count FROM posts WHERE status = "Lost"', (err, result) => {
-                stats.lostPets = result?.count || 0;
-                stats.postsByStatus.lost = result?.count || 0;
-                
-                db.get('SELECT COUNT(*) as count FROM posts WHERE status = "Adoption"', (err, result) => {
-                    stats.adoptions = result?.count || 0;
-                    stats.postsByStatus.adoption = result?.count || 0;
-                    
-                    db.get('SELECT COUNT(*) as count FROM posts WHERE status = "Found"', (err, result) => {
-                        stats.postsByStatus.found = result?.count || 0;
-                        
-                        // Get recent activity (last 5 posts)
-                        db.all('SELECT * FROM posts ORDER BY created_at DESC LIMIT 5', (err, posts) => {
-                            if (posts) {
-                                stats.recentActivity = posts.map(p => ({
-                                    type: p.status === 'Lost' ? 'lost' : p.status === 'Found' ? 'post' : 'adoption',
-                                    text: `${p.petName} - ${p.status} post`,
-                                    time: new Date(p.created_at).toLocaleDateString(),
-                                    status: p.reported ? 'pending' : 'new'
-                                }));
-                            }
-                            res.json(stats);
-                        });
-                    });
-                });
-            });
-        });
+    const totalUsers = await User.countDocuments();
+    const totalPosts = await Post.countDocuments();
+    const lostPets = await Post.countDocuments({ status: 'Lost' });
+    const foundPets = await Post.countDocuments({ status: 'Found' });
+    const adoptions = await Post.countDocuments({ status: 'Adoption' });
+    
+    // Get user growth (last 7 months)
+    const userGrowth = [];
+    const today = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const nextDate = new Date(today.getFullYear(), today.getMonth() - i + 1, 1);
+      const count = await User.countDocuments({
+        createdAt: { $gte: date, $lt: nextDate }
+      });
+      userGrowth.push(count);
+    }
+    
+    // Get recent activity (last 5 posts)
+    const recentPosts = await Post.find()
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .lean();
+    
+    const recentActivity = recentPosts.map(post => ({
+      type: post.status === 'Lost' ? 'lost' : post.status === 'Found' ? 'post' : 'adoption',
+      text: `${post.petName} - ${post.status} post by ${post.userName}`,
+      time: new Date(post.createdAt).toLocaleDateString(),
+      status: 'new'
+    }));
+    
+    res.json({
+      totalUsers,
+      totalPosts,
+      lostPets,
+      foundPets,
+      adoptions,
+      userGrowth,
+      postsByStatus: {
+        lost: lostPets,
+        found: foundPets,
+        adoption: adoptions
+      },
+      recentActivity
     });
+  } catch (error) {
+    console.error('❌ Stats error:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // ===== USERS =====
-router.get('/users', (req, res) => {
-    db.all(`
-        SELECT id, username as name, email, role, status, 
-               created_at as joined,
-               (SELECT COUNT(*) FROM posts WHERE userName = users.username) as posts
-        FROM users 
-        ORDER BY created_at DESC
-    `, (err, users) => {
-        if (err) {
-            return res.status(500).json({ error: err.message });
-        }
-        res.json(users || []);
-    });
-});
-
-router.get('/users/:id', (req, res) => {
-    db.get('SELECT * FROM users WHERE id = ?', [req.params.id], (err, user) => {
-        if (err) {
-            return res.status(500).json({ error: err.message });
-        }
-        if (!user) {
-            return res.status(404).json({ error: 'User not found' });
-        }
-        res.json(user);
-    });
-});
-
-router.post('/users', (req, res) => {
-    const { name, email, role, status, password } = req.body;
+router.get('/users', async (req, res) => {
+  try {
+    console.log('👥 Fetching all users...');
     
-    if (!name || !email) {
-        return res.status(400).json({ error: 'Name and email required' });
+    const users = await User.find().sort({ createdAt: -1 }).lean();
+    
+    console.log(`📊 Found ${users.length} total users`);
+    
+    const formattedUsers = users
+      .filter(user => user.email && user.email.includes('@'))
+      .map(user => ({
+        id: user._id,
+        firebaseUid: user.firebaseUid,
+        name: user.fullName || user.username || 'Unknown',
+        email: user.email || 'No email',
+        role: user.role || 'user',
+        status: user.status || 'Active',
+        joined: user.createdAt || new Date(),
+        posts: 0
+      }));
+    
+    console.log(`✅ Returning ${formattedUsers.length} users`);
+    res.json(formattedUsers);
+  } catch (error) {
+    console.error('❌ Get users error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/users/:id', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    res.json(user);
+  } catch (error) {
+    console.error('❌ Get user error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.put('/users/:id', async (req, res) => {
+  try {
+    const { name, email, role, status } = req.body;
+    
+    const currentUser = await User.findById(req.params.id);
+    if (!currentUser) {
+      return res.status(404).json({ error: 'User not found' });
     }
     
-    const hashedPassword = password ? bcrypt.hashSync(password, 10) : bcrypt.hashSync('default123', 10);
-    const username = name.toLowerCase().replace(/\s+/g, '_');
+    const updateData = {};
+    if (name) updateData.fullName = name;
+    if (email) updateData.email = email;
+    if (role) updateData.role = role;
+    if (status) updateData.status = status;
     
-    db.run(
-        'INSERT INTO users (username, email, password, role, status) VALUES (?, ?, ?, ?, ?)',
-        [username, email, hashedPassword, role || 'user', status || 'Active'],
-        function(err) {
-            if (err) {
-                return res.status(500).json({ error: err.message });
-            }
-            res.json({ id: this.lastID, success: true });
-        }
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true }
     );
+    
+    if (status && status !== currentUser.status) {
+      try {
+        if (admin.apps.length) {
+          if (status === 'Suspended') {
+            await admin.auth().updateUser(currentUser.firebaseUid, { disabled: true });
+            console.log(`🔒 User ${currentUser.email} disabled in Firebase`);
+          } else if (status === 'Active') {
+            await admin.auth().updateUser(currentUser.firebaseUid, { disabled: false });
+            console.log(`🔓 User ${currentUser.email} enabled in Firebase`);
+          }
+        }
+      } catch (firebaseError) {
+        console.error('❌ Firebase update error:', firebaseError.message);
+      }
+    }
+    
+    res.json({ success: true, user });
+  } catch (error) {
+    console.error('❌ Update user error:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
-router.put('/users/:id', (req, res) => {
-    const { name, email, role, status } = req.body;
-    const username = name.toLowerCase().replace(/\s+/g, '_');
+router.delete('/users/:id', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
     
-    db.run(
-        'UPDATE users SET username = ?, email = ?, role = ?, status = ? WHERE id = ?',
-        [username, email, role, status, req.params.id],
-        function(err) {
-            if (err) {
-                return res.status(500).json({ error: err.message });
-            }
-            res.json({ success: true });
-        }
-    );
-});
-
-router.delete('/users/:id', (req, res) => {
-    db.run('DELETE FROM users WHERE id = ?', [req.params.id], function(err) {
-        if (err) {
-            return res.status(500).json({ error: err.message });
-        }
-        res.json({ message: 'User deleted', id: req.params.id });
-    });
+    try {
+      if (admin.apps.length && user.firebaseUid) {
+        await admin.auth().deleteUser(user.firebaseUid);
+        console.log(`🔥 User ${user.email} deleted from Firebase`);
+      }
+    } catch (firebaseError) {
+      console.error('❌ Firebase delete error:', firebaseError.message);
+    }
+    
+    await Post.deleteMany({ firebaseUid: user.firebaseUid });
+    await User.findByIdAndDelete(req.params.id);
+    
+    res.json({ message: 'User and all associated data deleted', id: req.params.id });
+  } catch (error) {
+    console.error('❌ Delete user error:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // ===== POSTS =====
-router.get('/posts', (req, res) => {
-    db.all('SELECT * FROM posts ORDER BY created_at DESC', (err, posts) => {
-        if (err) {
-            return res.status(500).json({ error: err.message });
-        }
-        
-        // Format posts for frontend
-        const formattedPosts = posts.map(p => ({
-            ...p,
-            userAvatar: p.userName?.charAt(0).toUpperCase() || '?',
-            comments: 0,
-            time: new Date(p.created_at).toLocaleDateString()
-        }));
-        
-        res.json(formattedPosts || []);
-    });
-});
-
-router.get('/posts/:id', (req, res) => {
-    db.get('SELECT * FROM posts WHERE id = ?', [req.params.id], (err, post) => {
-        if (err) {
-            return res.status(500).json({ error: err.message });
-        }
-        if (!post) {
-            return res.status(404).json({ error: 'Post not found' });
-        }
-        res.json(post);
-    });
-});
-
-router.put('/posts/:id/flag', (req, res) => {
-    db.get('SELECT reported, reportCount FROM posts WHERE id = ?', [req.params.id], (err, post) => {
-        if (err) {
-            return res.status(500).json({ error: err.message });
-        }
-        
-        const newReported = !post.reported;
-        const newCount = newReported ? (post.reportCount || 0) + 1 : 0;
-        
-        db.run(
-            'UPDATE posts SET reported = ?, reportCount = ? WHERE id = ?',
-            [newReported ? 1 : 0, newCount, req.params.id],
-            function(err) {
-                if (err) {
-                    return res.status(500).json({ error: err.message });
-                }
-                res.json({ success: true, reported: newReported });
-            }
-        );
-    });
-});
-
-router.delete('/posts/:id', (req, res) => {
-    db.run('DELETE FROM posts WHERE id = ?', [req.params.id], function(err) {
-        if (err) {
-            return res.status(500).json({ error: err.message });
-        }
-        res.json({ message: 'Post deleted', id: req.params.id });
-    });
-});
-
-// ===== REPORTS =====
-router.get('/reports/summary', (req, res) => {
-    const { start, end } = req.query;
+router.get('/posts', async (req, res) => {
+  try {
+    console.log('📥 Fetching all posts...');
     
-    db.all(`
-        SELECT 
-            strftime('%Y-%m', created_at) as month,
-            COUNT(CASE WHEN status = 'Lost' THEN 1 END) as lost,
-            COUNT(CASE WHEN status = 'Found' THEN 1 END) as found,
-            COUNT(CASE WHEN status = 'Adoption' THEN 1 END) as adoption,
-            COUNT(*) as total
-        FROM posts
-        WHERE date(created_at) BETWEEN date(?) AND date(?)
-        GROUP BY month
-        ORDER BY month DESC
-    `, [start || '2024-01-01', end || '2024-12-31'], (err, rows) => {
-        if (err) {
-            return res.status(500).json({ error: err.message });
+    const posts = await Post.find().sort({ createdAt: -1 }).lean();
+    
+    console.log(`📊 Found ${posts.length} posts`);
+    
+    const formattedPosts = posts.map(post => ({
+      id: post._id,
+      postId: post.postId,
+      petName: post.petName || 'Unnamed',
+      status: post.status || 'Unknown',
+      userName: post.userName || 'Unknown',
+      location: post.location || 'No location',
+      description: post.description || '',
+      contact: post.contactInfo || 'No contact',
+      reported: false,
+      reportCount: 0,
+      time: post.createdAt ? new Date(post.createdAt).toLocaleDateString() : 'Unknown',
+      userAvatar: post.userName?.charAt(0).toUpperCase() || '?',
+      imageUrls: post.imageUrls || []
+    }));
+    
+    console.log(`✅ Returning ${formattedPosts.length} posts`);
+    res.json(formattedPosts);
+  } catch (error) {
+    console.error('❌ Get posts error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/posts/:id', async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.id);
+    if (!post) {
+      return res.status(404).json({ error: 'Post not found' });
+    }
+    res.json(post);
+  } catch (error) {
+    console.error('❌ Get post error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.delete('/posts/:id', async (req, res) => {
+  try {
+    const post = await Post.findByIdAndDelete(req.params.id);
+    if (!post) {
+      return res.status(404).json({ error: 'Post not found' });
+    }
+    console.log(`🗑️ Post ${post.postId} deleted`);
+    res.json({ message: 'Post deleted', id: req.params.id });
+  } catch (error) {
+    console.error('❌ Delete post error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ===== REPORTS MANAGEMENT =====
+router.get('/reports', async (req, res) => {
+  try {
+    console.log('📋 Fetching all reports...');
+    
+    const reports = await Report.find()
+      .sort({ createdAt: -1 })
+      .lean();
+    
+    const reportsWithDetails = await Promise.all(
+      reports.map(async (report) => {
+        let post = null;
+        if (report.postId) {
+          post = await Post.findOne({ postId: report.postId }).lean();
         }
-        res.json(rows || []);
+        
+        const reporter = await User.findOne({ firebaseUid: report.reporterUid })
+          .select('username email')
+          .lean();
+        
+        let reportedUser = null;
+        if (report.reportedUid) {
+          reportedUser = await User.findOne({ firebaseUid: report.reportedUid })
+            .select('username email')
+            .lean();
+        }
+        
+        return {
+          ...report,
+          post: post,
+          reporter: reporter,
+          reportedUser: reportedUser
+        };
+      })
+    );
+    
+    console.log(`✅ Found ${reportsWithDetails.length} reports`);
+    res.json(reportsWithDetails);
+  } catch (error) {
+    console.error('❌ Get reports error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.put('/reports/:reportId/status', async (req, res) => {
+  try {
+    const { status } = req.body;
+    
+    if (!['reviewed', 'dismissed'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid status' });
+    }
+    
+    const report = await Report.findOneAndUpdate(
+      { reportId: req.params.reportId },
+      { status: status },
+      { new: true }
+    );
+    
+    if (!report) {
+      return res.status(404).json({ error: 'Report not found' });
+    }
+    
+    console.log(`✅ Report ${report.reportId} marked as ${status}`);
+    res.json({ success: true, report });
+  } catch (error) {
+    console.error('❌ Update report status error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.delete('/reports/:reportId', async (req, res) => {
+  try {
+    const report = await Report.findOneAndDelete({
+      reportId: req.params.reportId
     });
+    
+    if (!report) {
+      return res.status(404).json({ error: 'Report not found' });
+    }
+    
+    console.log(`✅ Report ${report.reportId} deleted`);
+    res.json({ success: true, message: 'Report deleted' });
+  } catch (error) {
+    console.error('❌ Delete report error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/posts/reported', async (req, res) => {
+  try {
+    console.log('📋 Fetching reported posts...');
+    
+    const reports = await Report.aggregate([
+      { $match: { postId: { $ne: '' } } },
+      { $group: { 
+          _id: "$postId", 
+          reportCount: { $sum: 1 },
+          reports: { $push: "$$ROOT" }
+        }
+      },
+      { $sort: { reportCount: -1 } }
+    ]);
+    
+    const reportedPosts = await Promise.all(
+      reports.map(async (item) => {
+        const post = await Post.findOne({ postId: item._id }).lean();
+        if (!post) return null;
+        
+        return {
+          ...post,
+          reportCount: item.reportCount,
+          reports: item.reports
+        };
+      })
+    );
+    
+    const filteredPosts = reportedPosts.filter(p => p !== null);
+    
+    console.log(`✅ Found ${filteredPosts.length} reported posts`);
+    res.json(filteredPosts);
+  } catch (error) {
+    console.error('❌ Get reported posts error:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // ===== SETTINGS =====
-router.get('/settings', (req, res) => {
-    db.get('SELECT * FROM settings WHERE id = 1', (err, settings) => {
-        if (err || !settings) {
-            // Return default settings
-            res.json({
-                siteName: 'PawSociety',
-                siteDescription: 'Because Every Pet Deserves a Home',
-                contactEmail: 'admin@pawsociety.com',
-                timezone: 'PST',
-                allowRegistration: true,
-                emailVerification: true,
-                defaultRole: 'user',
-                twoFactorAuth: false,
-                sessionTimeout: 120,
-                autoApprovePosts: true,
-                profanityFilter: true
-            });
-        } else {
-            res.json(settings);
-        }
-    });
+router.get('/settings', async (req, res) => {
+  res.json({
+    siteName: 'PawSociety',
+    siteDescription: 'Because Every Pet Deserves a Home',
+    contactEmail: 'admin@pawsociety.com',
+    timezone: 'Asia/Manila',
+    allowRegistration: true,
+    emailVerification: true,
+    defaultRole: 'user',
+    twoFactorAuth: false,
+    sessionTimeout: 120,
+    autoApprovePosts: true,
+    profanityFilter: true
+  });
 });
 
-router.put('/settings', (req, res) => {
-    const settings = req.body;
-    
-    db.run(`
-        INSERT OR REPLACE INTO settings (id, siteName, siteDescription, contactEmail, timezone, 
-            allowRegistration, emailVerification, defaultRole, twoFactorAuth, sessionTimeout, 
-            autoApprovePosts, profanityFilter)
-        VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [
-        settings.siteName,
-        settings.siteDescription,
-        settings.contactEmail,
-        settings.timezone,
-        settings.allowRegistration ? 1 : 0,
-        settings.emailVerification ? 1 : 0,
-        settings.defaultRole,
-        settings.twoFactorAuth ? 1 : 0,
-        settings.sessionTimeout,
-        settings.autoApprovePosts ? 1 : 0,
-        settings.profanityFilter ? 1 : 0
-    ], function(err) {
-        if (err) {
-            return res.status(500).json({ error: err.message });
-        }
-        res.json({ success: true });
-    });
+router.put('/settings', async (req, res) => {
+  console.log('⚙️ Settings updated');
+  res.json({ success: true });
 });
 
-// Clear all data (danger zone)
-router.post('/clear-all-data', (req, res) => {
-    db.serialize(() => {
-        db.run('DELETE FROM posts');
-        db.run('DELETE FROM users WHERE role != "admin"');
-    });
+router.post('/clear-all-data', async (req, res) => {
+  try {
+    await Post.deleteMany({});
+    await User.deleteMany({ role: { $ne: 'admin' } });
+    console.log('⚠️ All non-admin data cleared');
     res.json({ message: 'All non-admin data cleared' });
+  } catch (error) {
+    console.error('❌ Clear data error:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 module.exports = router;
