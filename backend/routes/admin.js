@@ -243,6 +243,9 @@ router.delete('/users/:id', async (req, res) => {
   }
 });
 
+
+
+
 // ===== POSTS =====
 // Around line 210-230, find this section:
 router.get('/posts', async (req, res) => {
@@ -598,37 +601,54 @@ router.get('/posts/reported', async (req, res) => {
   }
 });
 
-// ===== SETTINGS =====
+// ===== SETTINGS PROXY TO APP BACKEND =====
 router.get('/settings', async (req, res) => {
-  res.json({
-    siteName: 'PawSociety',
-    siteDescription: 'Because Every Pet Deserves a Home',
-    contactEmail: 'admin@pawsociety.com',
-    timezone: 'Asia/Manila',
-    allowRegistration: true,
-    emailVerification: true,
-    defaultRole: 'user',
-    twoFactorAuth: false,
-    sessionTimeout: 120,
-    autoApprovePosts: true,
-    profanityFilter: true
-  });
-});
-
-router.put('/settings', async (req, res) => {
-  console.log('⚙️ Settings updated');
-  res.json({ success: true });
-});
-
-router.post('/clear-all-data', async (req, res) => {
   try {
-    await Post.deleteMany({});
-    await User.deleteMany({ role: { $ne: 'admin' } });
-    console.log('⚠️ All non-admin data cleared');
-    res.json({ message: 'All non-admin data cleared' });
+    const axios = require('axios');
+    
+    console.log('📤 Forwarding settings request to app backend...');
+    
+    // Forward the request to your APP BACKEND (port 5000)
+    const response = await axios.get('http://localhost:5000/api/admin/settings', {
+      headers: {
+        'Authorization': req.headers.authorization // Pass the same token
+      }
+    });
+    
+    console.log('✅ Settings received from app backend');
+    res.json(response.data);
+    
   } catch (error) {
-    console.error('❌ Clear data error:', error);
-    res.status(500).json({ error: error.message });
+    console.error('❌ Failed to get settings from app backend:', error.message);
+    res.status(500).json({ error: 'App backend not reachable' });
+  }
+});
+
+// ===== UPDATE SETTINGS PROXY =====
+router.put('/settings/:section', async (req, res) => {
+  try {
+    const axios = require('axios');
+    const { section } = req.params;
+    
+    console.log(`📤 Forwarding ${section} settings update to app backend...`);
+    
+    const response = await axios.put(
+      `http://localhost:5000/api/admin/settings/${section}`,
+      req.body,
+      {
+        headers: {
+          'Authorization': req.headers.authorization,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    console.log(`✅ ${section} settings updated in app backend`);
+    res.json(response.data);
+    
+  } catch (error) {
+    console.error(`❌ Failed to update settings in app backend:`, error.message);
+    res.status(500).json({ error: 'Failed to update settings' });
   }
 });
 

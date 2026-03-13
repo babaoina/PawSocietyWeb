@@ -3,18 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PawSociety Admin Dashboard</title>
-    <link rel="stylesheet" href="style.css">
+    <title>PawSociety - Dashboard 🐾</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Poppins', sans-serif;
         }
 
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
         body {
-            background: #F5E6D3;
+            background: #fdf8f4;
             min-height: 100vh;
         }
 
@@ -31,10 +34,62 @@
             right: 0;
             z-index: 1000;
             height: 70px;
+            box-shadow: 0 4px 15px rgba(122, 79, 43, 0.2);
         }
 
         .logo h1 {
             font-size: 24px;
+            font-weight: 600;
+        }
+
+        .logo span {
+            font-weight: 300;
+            opacity: 0.9;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+        }
+
+        .notification-container {
+            position: relative;
+            cursor: pointer;
+        }
+
+        .notification-bell {
+            font-size: 24px;
+            color: white;
+            transition: transform 0.2s;
+        }
+
+        .notification-bell:hover {
+            transform: scale(1.1);
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #f44336;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            border: 2px solid white;
+            animation: ping 1.5s infinite;
+        }
+
+        @keyframes ping {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
         }
 
         .admin-profile {
@@ -50,7 +105,7 @@
         }
 
         .admin-name .name {
-            font-weight: bold;
+            font-weight: 600;
         }
 
         .admin-name .role {
@@ -59,36 +114,38 @@
         }
 
         .avatar {
-            width: 40px;
-            height: 40px;
+            width: 45px;
+            height: 45px;
             background: #B88B4A;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: bold;
+            font-weight: 600;
+            font-size: 18px;
             cursor: pointer;
             transition: all 0.3s;
+            border: 2px solid #ffd89c;
         }
 
         .avatar:hover {
             background: #DAA520;
-            transform: scale(1.05);
+            transform: scale(1.05) rotate(5deg);
         }
 
-        /* Dropdown Menu */
         .dropdown-menu {
             position: absolute;
             top: 60px;
             right: 0;
             background: white;
-            border-radius: 8px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
-            width: 150px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(122, 79, 43, 0.15);
+            width: 220px;
             display: none;
             z-index: 1001;
             overflow: hidden;
             animation: slideDown 0.3s ease;
+            border: 1px solid #ffe4cc;
         }
 
         .dropdown-menu.show {
@@ -96,28 +153,24 @@
         }
 
         .dropdown-item {
-            padding: 12px 16px;
+            padding: 14px 18px;
             display: flex;
             align-items: center;
             gap: 12px;
-            color: #333;
+            color: #4a3b2f;
             cursor: pointer;
             transition: all 0.2s;
+            font-weight: 500;
         }
 
         .dropdown-item:hover {
-            background: #F5E6D3;
+            background: #fdf1e6;
             color: #7A4F2B;
         }
 
         .dropdown-item.logout:hover {
-            background: #FFEBEE;
-            color: #F44336;
-        }
-
-        .dropdown-icon {
-            font-size: 18px;
-            width: 24px;
+            background: #ffe6e6;
+            color: #f44336;
         }
 
         @keyframes slideDown {
@@ -138,142 +191,320 @@
         }
 
         .sidebar {
-            width: 250px;
+            width: 260px;
             background: white;
-            padding: 20px 0;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.05);
+            padding: 25px 0;
+            box-shadow: 2px 0 20px rgba(122, 79, 43, 0.05);
             position: fixed;
             height: calc(100vh - 70px);
             overflow-y: auto;
+            border-radius: 0 20px 0 0;
         }
 
         .menu-item {
-            padding: 12px 25px;
+            padding: 14px 25px;
             display: flex;
             align-items: center;
-            gap: 12px;
-            color: #666;
+            gap: 15px;
+            color: #8b7a6a;
             cursor: pointer;
             transition: all 0.3s;
-            border-left: 3px solid transparent;
+            border-left: 4px solid transparent;
+            margin: 5px 0;
+            font-weight: 500;
         }
 
         .menu-item:hover {
-            background: #F5E6D3;
+            background: #fdf1e6;
             color: #7A4F2B;
+            border-left-color: #B88B4A;
         }
 
         .menu-item.active {
-            background: #F5E6D3;
+            background: #fdf1e6;
             color: #7A4F2B;
             border-left-color: #7A4F2B;
-            font-weight: bold;
+            font-weight: 600;
         }
 
         .menu-icon {
-            font-size: 20px;
+            font-size: 22px;
         }
 
         .main-content {
             flex: 1;
-            padding: 30px;
-            margin-left: 250px;
+            padding: 35px;
+            margin-left: 260px;
         }
 
-        .page-title {
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 30px;
         }
 
-        .page-title h2 {
+        .page-header h2 {
             color: #7A4F2B;
+            font-size: 32px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .page-header h2 i {
             font-size: 28px;
+            color: #B88B4A;
         }
 
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 25px;
             margin-bottom: 30px;
         }
 
         .stat-card {
             background: white;
             padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            border-radius: 35px;
+            box-shadow: 0 10px 30px rgba(122, 79, 43, 0.05);
             display: flex;
             align-items: center;
             justify-content: space-between;
-            animation: slideIn 0.5s ease forwards;
-            opacity: 0;
-            transition: all 0.3s ease;
+            border: 2px solid #ffdec2;
+            transition: all 0.3s;
         }
-
-        .stat-card:nth-child(1) { animation-delay: 0.1s; }
-        .stat-card:nth-child(2) { animation-delay: 0.2s; }
-        .stat-card:nth-child(3) { animation-delay: 0.3s; }
-        .stat-card:nth-child(4) { animation-delay: 0.4s; }
 
         .stat-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border-color: #B88B4A;
+            box-shadow: 0 15px 35px rgba(122, 79, 43, 0.1);
         }
 
         .stat-info h3 {
-            color: #666;
+            color: #b5a99c;
             font-size: 14px;
-            font-weight: normal;
+            font-weight: 500;
             margin-bottom: 5px;
         }
 
         .stat-info .number {
             color: #7A4F2B;
-            font-size: 32px;
-            font-weight: bold;
+            font-size: 42px;
+            font-weight: 700;
         }
 
         .stat-icon {
-            font-size: 40px;
-            opacity: 0.5;
-        }
-
-        .charts-section {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .chart-card {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-            animation: slideIn 0.6s ease forwards;
-            opacity: 0;
-            animation-delay: 0.5s;
-        }
-
-        .chart-card h3 {
+            width: 70px;
+            height: 70px;
+            background: #fdf1e6;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
             color: #7A4F2B;
+            border: 2px solid #ffdec2;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
+            margin-bottom: 35px;
+        }
+
+        .status-card {
+            background: white;
+            padding: 25px;
+            border-radius: 35px;
+            box-shadow: 0 10px 30px rgba(122, 79, 43, 0.05);
+            border: 2px solid #ffdec2;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .status-card:hover {
+            transform: translateY(-5px);
+            border-color: #B88B4A;
+        }
+
+        .status-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+        }
+
+        .status-card.lost::before { background: #f44336; }
+        .status-card.found::before { background: #4caf50; }
+        .status-card.adoption::before { background: #2196f3; }
+
+        .status-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 20px;
-            font-size: 18px;
+        }
+
+        .status-header h3 {
+            color: #b5a99c;
+            font-size: 15px;
+            font-weight: 500;
+        }
+
+        .status-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .status-icon.lost { background: rgba(244, 67, 54, 0.1); color: #f44336; }
+        .status-icon.found { background: rgba(76, 175, 80, 0.1); color: #4caf50; }
+        .status-icon.adoption { background: rgba(33, 150, 243, 0.1); color: #2196f3; }
+
+        .status-value {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+
+        .status-value.lost { color: #f44336; }
+        .status-value.found { color: #4caf50; }
+        .status-value.adoption { color: #2196f3; }
+
+        .status-footer {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-change {
+            padding: 6px 14px;
+            border-radius: 30px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .status-change.lost { background: rgba(244, 67, 54, 0.1); color: #f44336; }
+        .status-change.found { background: rgba(76, 175, 80, 0.1); color: #4caf50; }
+        .status-change.adoption { background: rgba(33, 150, 243, 0.1); color: #2196f3; }
+
+        .status-period {
+            color: #b5a99c;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .growth-section {
+            background: white;
+            padding: 30px;
+            border-radius: 40px;
+            box-shadow: 0 10px 30px rgba(122, 79, 43, 0.05);
+            margin-bottom: 35px;
+            border: 2px solid #ffdec2;
+        }
+
+        .growth-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .growth-header h3 {
+            color: #7A4F2B;
+            font-size: 22px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .year-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #fdf1e6;
+            padding: 8px 20px;
+            border-radius: 40px;
+            cursor: pointer;
+            border: 2px solid #ffdec2;
+        }
+
+        .year-selector span {
+            color: #7A4F2B;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+            margin: 20px 0;
+        }
+
+        .growth-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-top: 25px;
+            padding-top: 25px;
+            border-top: 2px dashed #ffdec2;
+        }
+
+        .growth-stat-item {
+            background: #fdf1e6;
+            padding: 20px;
+            border-radius: 25px;
+            border: 2px solid #ffdec2;
+        }
+
+        .growth-stat-label {
+            color: #b5a99c;
+            font-size: 12px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .growth-stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #7A4F2B;
+            margin-bottom: 5px;
+        }
+
+        .growth-stat-change {
+            font-size: 12px;
+            color: #4caf50;
+            font-weight: 600;
         }
 
         .recent-activity {
             background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-            animation: slideIn 0.7s ease forwards;
-            opacity: 0;
-            animation-delay: 0.6s;
+            padding: 25px;
+            border-radius: 35px;
+            box-shadow: 0 10px 30px rgba(122, 79, 43, 0.05);
+            border: 2px solid #ffdec2;
         }
 
         .recent-activity h3 {
             color: #7A4F2B;
             margin-bottom: 20px;
-            font-size: 18px;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .activity-item {
@@ -281,29 +512,24 @@
             align-items: center;
             gap: 15px;
             padding: 15px 0;
-            border-bottom: 1px solid #F0F0F0;
-            animation: slideIn 0.3s ease forwards;
-            opacity: 0;
+            border-bottom: 2px dashed #ffdec2;
         }
-
-        .activity-item:nth-child(1) { animation-delay: 1.1s; }
-        .activity-item:nth-child(2) { animation-delay: 1.2s; }
-        .activity-item:nth-child(3) { animation-delay: 1.3s; }
-        .activity-item:nth-child(4) { animation-delay: 1.4s; }
 
         .activity-item:last-child {
             border-bottom: none;
         }
 
         .activity-icon {
-            width: 40px;
-            height: 40px;
-            background: #F5E6D3;
+            width: 50px;
+            height: 50px;
+            background: #fdf1e6;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             color: #7A4F2B;
+            font-size: 20px;
+            border: 2px solid #ffdec2;
         }
 
         .activity-details {
@@ -311,73 +537,25 @@
         }
 
         .activity-details .text {
-            color: #333;
-            margin-bottom: 3px;
+            color: #4a3b2f;
+            margin-bottom: 5px;
+            font-weight: 500;
         }
 
         .activity-details .time {
-            color: #999;
+            color: #b5a99c;
             font-size: 12px;
         }
 
         .activity-status {
-            padding: 5px 10px;
-            border-radius: 15px;
+            padding: 6px 16px;
+            border-radius: 40px;
             font-size: 12px;
-            font-weight: bold;
-        }
-
-        .status-new {
-            background: #4CAF50;
+            font-weight: 600;
+            background: #4caf50;
             color: white;
         }
 
-        .status-pending {
-            background: #FF9800;
-            color: white;
-        }
-
-        .quick-actions {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-            margin-top: 30px;
-        }
-
-        .action-btn {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-            border: 2px solid transparent;
-            animation: slideIn 0.5s ease forwards;
-            opacity: 0;
-        }
-
-        .action-btn:nth-child(1) { animation-delay: 0.7s; }
-        .action-btn:nth-child(2) { animation-delay: 0.8s; }
-        .action-btn:nth-child(3) { animation-delay: 0.9s; }
-        .action-btn:nth-child(4) { animation-delay: 1.0s; }
-
-        .action-btn:hover {
-            border-color: #B88B4A;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-
-        .action-icon {
-            font-size: 30px;
-            margin-bottom: 10px;
-        }
-
-        .action-btn span {
-            color: #7A4F2B;
-            font-weight: bold;
-        }
-
-        /* Animations */
         @keyframes slideIn {
             from {
                 transform: translateY(20px);
@@ -389,56 +567,28 @@
             }
         }
 
-        @keyframes growBar {
+        @keyframes slideOut {
             from {
-                height: 0;
-                opacity: 0;
-            }
-            to {
-                height: var(--target-height);
+                transform: translateX(0);
                 opacity: 1;
             }
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.02); }
-            100% { transform: scale(1); }
-        }
-
-        @keyframes fadeInUp {
-            from {
-                transform: translateY(10px);
+            to {
+                transform: translateX(100%);
                 opacity: 0;
             }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
         }
 
-        .bar-item .bar {
-            animation: growBar 1s ease-out forwards;
-            transform-origin: bottom;
-        }
-
-        .pulse-on-hover:hover {
-            animation: pulse 0.3s ease;
-        }
-
-        .fade-in {
-            animation: fadeInUp 0.3s ease forwards;
-        }
-
-        .status-bar {
-            transition: width 1s ease-in-out;
-        }
-
-        .growth-bar {
-            transition: height 1s ease-in-out;
+        #toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
         }
 
         @media (max-width: 768px) {
+            .stats-grid, .status-grid, .growth-stats {
+                grid-template-columns: 1fr;
+            }
             .container {
                 flex-direction: column;
             }
@@ -450,32 +600,36 @@
             .main-content {
                 margin-left: 0;
             }
-            .charts-section {
-                grid-template-columns: 1fr;
-            }
-            .admin-name {
-                display: none;
-            }
         }
     </style>
 </head>
 <body>
     <div class="header">
         <div class="logo">
-            <h1>PawSociety <span>Admin</span></h1>
+            <h1>PawSociety <span>🐾 Admin</span></h1>
         </div>
-        <div class="admin-profile" id="adminProfile">
-            <div class="admin-name">
-                <div class="name" id="adminName">Admin User</div>
-                <div class="role" id="adminRole">Super Admin</div>
+        <div class="header-right">
+            <div class="notification-container" id="notificationBell" onclick="toggleNotifications()">
+                <i class="fas fa-bell notification-bell"></i>
+                <span class="notification-badge" id="notificationBadge">0</span>
             </div>
-            <div class="avatar" id="avatarBtn">A</div>
             
-            <!-- Dropdown Menu - ONLY LOGOUT -->
-            <div class="dropdown-menu" id="dropdownMenu">
-                <div class="dropdown-item logout" onclick="logout()">
-                    <span class="dropdown-icon">🚪</span>
-                    <span>Logout</span>
+            <div class="admin-profile" id="adminProfile">
+                <div class="admin-name">
+                    <div class="name" id="adminName">Admin User</div>
+                    <div class="role" id="adminRole">Super Admin</div>
+                </div>
+                <div class="avatar" id="avatarBtn">🐶</div>
+                
+                <div class="dropdown-menu" id="dropdownMenu">
+                    <div class="dropdown-item" onclick="window.location.href='settings.html'">
+                        <i class="fas fa-cog"></i>
+                        <span>Settings</span>
+                    </div>
+                    <div class="dropdown-item logout" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Logout</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -483,33 +637,38 @@
 
     <div class="container">
         <div class="sidebar">
-            <!-- REARRANGED MENU: Dashboard → Posts → Users → Reports → Settings -->
             <div class="menu-item active" onclick="window.location.href='dashboard.html'">
-                <span class="menu-icon">📊</span>
+                <i class="fas fa-home menu-icon"></i>
                 <span>Dashboard</span>
             </div>
             <div class="menu-item" onclick="window.location.href='posts.html'">
-                <span class="menu-icon">📝</span>
+                <i class="fas fa-paw menu-icon"></i>
                 <span>Posts</span>
             </div>
             <div class="menu-item" onclick="window.location.href='users.html'">
-                <span class="menu-icon">👥</span>
+                <i class="fas fa-users menu-icon"></i>
                 <span>Users</span>
             </div>
             <div class="menu-item" onclick="window.location.href='reports.html'">
-                <span class="menu-icon">📈</span>
+                <i class="fas fa-chart-bar menu-icon"></i>
                 <span>Reports</span>
             </div>
             <div class="menu-item" onclick="window.location.href='settings.html'">
-                <span class="menu-icon">⚙️</span>
+                <i class="fas fa-cog menu-icon"></i>
                 <span>Settings</span>
             </div>
-            <!-- LOGOUT REMOVED FROM SIDEBAR -->
         </div>
 
         <div class="main-content">
-            <div class="page-title">
-                <h2>Dashboard Overview</h2>
+            <div class="page-header">
+                <h2>
+                    <i class="fas fa-home"></i>
+                    Dashboard
+                </h2>
+                <div class="date-badge" style="background: #fdf1e6; padding: 8px 20px; border-radius: 40px; border: 2px solid #ffdec2;">
+                    <i class="fas fa-calendar" style="color: #7A4F2B;"></i>
+                    <span style="color: #7A4F2B; margin-left: 8px;">March 2026</span>
+                </div>
             </div>
 
             <div class="stats-grid">
@@ -518,138 +677,108 @@
                         <h3>Total Users</h3>
                         <div class="number" id="total-users">0</div>
                     </div>
-                    <div class="stat-icon">👥</div>
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-info">
                         <h3>Total Posts</h3>
                         <div class="number" id="total-posts">0</div>
                     </div>
-                    <div class="stat-icon">📝</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-info">
-                        <h3>Lost Pets</h3>
-                        <div class="number" id="lost-pets">0</div>
+                    <div class="stat-icon">
+                        <i class="fas fa-paw"></i>
                     </div>
-                    <div class="stat-icon">🔍</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-info">
-                        <h3>Adoptions</h3>
-                        <div class="number" id="adoptions">0</div>
-                    </div>
-                    <div class="stat-icon">🏠</div>
                 </div>
             </div>
 
-            <div class="charts-section">
-                <div class="chart-card">
-                    <h3>User Growth</h3>
-                    <div style="height: 200px; display: flex; align-items: flex-end; gap: 10px; padding-top: 20px;">
-                        <div class="bar-item" style="flex: 1; display: flex; flex-direction: column; align-items: center;">
-                            <div class="growth-bar" style="width: 100%; background: #7A4F2B; height: 0px; border-radius: 5px 5px 0 0;"></div>
-                            <span class="bar-label" style="margin-top: 8px;">Jan</span>
-                        </div>
-                        <div class="bar-item" style="flex: 1; display: flex; flex-direction: column; align-items: center;">
-                            <div class="growth-bar" style="width: 100%; background: #B88B4A; height: 0px; border-radius: 5px 5px 0 0;"></div>
-                            <span class="bar-label" style="margin-top: 8px;">Feb</span>
-                        </div>
-                        <div class="bar-item" style="flex: 1; display: flex; flex-direction: column; align-items: center;">
-                            <div class="growth-bar" style="width: 100%; background: #7A4F2B; height: 0px; border-radius: 5px 5px 0 0;"></div>
-                            <span class="bar-label" style="margin-top: 8px;">Mar</span>
-                        </div>
-                        <div class="bar-item" style="flex: 1; display: flex; flex-direction: column; align-items: center;">
-                            <div class="growth-bar" style="width: 100%; background: #B88B4A; height: 0px; border-radius: 5px 5px 0 0;"></div>
-                            <span class="bar-label" style="margin-top: 8px;">Apr</span>
-                        </div>
-                        <div class="bar-item" style="flex: 1; display: flex; flex-direction: column; align-items: center;">
-                            <div class="growth-bar" style="width: 100%; background: #7A4F2B; height: 0px; border-radius: 5px 5px 0 0;"></div>
-                            <span class="bar-label" style="margin-top: 8px;">May</span>
-                        </div>
-                        <div class="bar-item" style="flex: 1; display: flex; flex-direction: column; align-items: center;">
-                            <div class="growth-bar" style="width: 100%; background: #B88B4A; height: 0px; border-radius: 5px 5px 0 0;"></div>
-                            <span class="bar-label" style="margin-top: 8px;">Jun</span>
-                        </div>
-                        <div class="bar-item" style="flex: 1; display: flex; flex-direction: column; align-items: center;">
-                            <div class="growth-bar" style="width: 100%; background: #7A4F2B; height: 0px; border-radius: 5px 5px 0 0;"></div>
-                            <span class="bar-label" style="margin-top: 8px;">Jul</span>
-                        </div>
+            <div class="status-grid">
+                <div class="status-card lost">
+                    <div class="status-header">
+                        <h3>Lost Pets</h3>
+                        <div class="status-icon lost">🔍</div>
+                    </div>
+                    <div class="status-value lost" id="lost-pets">0</div>
+                    <div class="status-footer">
+                        <div class="status-change lost" id="lost-change">↑ 1.56%</div>
+                        <div class="status-period">Weekly ▼</div>
                     </div>
                 </div>
+                
+                <div class="status-card found">
+                    <div class="status-header">
+                        <h3>Found Pets</h3>
+                        <div class="status-icon found">✅</div>
+                    </div>
+                    <div class="status-value found" id="found-pets">0</div>
+                    <div class="status-footer">
+                        <div class="status-change found" id="found-change">↑ 1.56%</div>
+                        <div class="status-period">Monthly ▼</div>
+                    </div>
+                </div>
+                
+                <div class="status-card adoption">
+                    <div class="status-header">
+                        <h3>For Adoption</h3>
+                        <div class="status-icon adoption">🏠</div>
+                    </div>
+                    <div class="status-value adoption" id="adoption-pets">0</div>
+                    <div class="status-footer">
+                        <div class="status-change adoption" id="adoption-change">↑ 1.56%</div>
+                        <div class="status-period">Yearly ▼</div>
+                    </div>
+                </div>
+            </div>
 
-                <div class="chart-card">
-                    <h3>Posts by Status</h3>
-                    <div style="margin-top: 20px;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                            <span>Lost</span>
-                            <span style="color: #F44336; font-weight: bold;" id="lost-count">0</span>
-                        </div>
-                        <div style="height: 8px; background: #F0F0F0; border-radius: 4px; margin-bottom: 15px; overflow: hidden;">
-                            <div id="lost-bar" class="status-bar" style="width: 0%; height: 100%; background: #F44336; border-radius: 4px;"></div>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                            <span style="color: #999; font-size: 12px;">Percentage</span>
-                            <span style="color: #F44336; font-size: 12px; font-weight: bold;" id="lost-percent">0%</span>
-                        </div>
-                        
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px; margin-top: 15px;">
-                            <span>Found</span>
-                            <span style="color: #4CAF50; font-weight: bold;" id="found-count">0</span>
-                        </div>
-                        <div style="height: 8px; background: #F0F0F0; border-radius: 4px; margin-bottom: 15px; overflow: hidden;">
-                            <div id="found-bar" class="status-bar" style="width: 0%; height: 100%; background: #4CAF50; border-radius: 4px;"></div>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                            <span style="color: #999; font-size: 12px;">Percentage</span>
-                            <span style="color: #4CAF50; font-size: 12px; font-weight: bold;" id="found-percent">0%</span>
-                        </div>
-                        
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px; margin-top: 15px;">
-                            <span>Adoption</span>
-                            <span style="color: #2196F3; font-weight: bold;" id="adoption-count">0</span>
-                        </div>
-                        <div style="height: 8px; background: #F0F0F0; border-radius: 4px; margin-bottom: 15px; overflow: hidden;">
-                            <div id="adoption-bar" class="status-bar" style="width: 0%; height: 100%; background: #2196F3; border-radius: 4px;"></div>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                            <span style="color: #999; font-size: 12px;">Percentage</span>
-                            <span style="color: #2196F3; font-size: 12px; font-weight: bold;" id="adoption-percent">0%</span>
-                        </div>
+            <div class="growth-section">
+                <div class="growth-header">
+                    <h3>
+                        <i class="fas fa-chart-line"></i>
+                        User Growth
+                    </h3>
+                    <div class="year-selector" onclick="toggleYear()">
+                        <span id="selectedYear">2026</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <canvas id="userGrowthChart"></canvas>
+                </div>
+                
+                <div class="growth-stats">
+                    <div class="growth-stat-item">
+                        <div class="growth-stat-label">Total Users</div>
+                        <div class="growth-stat-value" id="total-users-growth">0</div>
+                        <div class="growth-stat-change" id="total-users-change">↑ 12.5%</div>
+                    </div>
+                    <div class="growth-stat-item">
+                        <div class="growth-stat-label">New This Month</div>
+                        <div class="growth-stat-value" id="new-this-month">0</div>
+                        <div class="growth-stat-change" id="new-month-change">↑ 8.2%</div>
+                    </div>
+                    <div class="growth-stat-item">
+                        <div class="growth-stat-label">Active Users</div>
+                        <div class="growth-stat-value" id="active-users">0</div>
+                        <div class="growth-stat-change" id="active-change">↑ 5.3%</div>
                     </div>
                 </div>
             </div>
 
             <div class="recent-activity">
-                <h3>Recent Activity</h3>
+                <h3>
+                    <i class="fas fa-clock"></i>
+                    Recent Activity
+                </h3>
                 <div id="activity-container">
-                    <p style="color: #999; text-align: center; padding: 20px;">No recent activity</p>
-                </div>
-            </div>
-
-            <div class="quick-actions">
-                <div class="action-btn" onclick="window.location.href='users.html'">
-                    <div class="action-icon">👥</div>
-                    <span>Manage Users</span>
-                </div>
-                <div class="action-btn" onclick="window.location.href='posts.html'">
-                    <div class="action-icon">📝</div>
-                    <span>Review Posts</span>
-                </div>
-                <div class="action-btn" onclick="window.location.href='reports.html'">
-                    <div class="action-icon">📊</div>
-                    <span>View Reports</span>
-                </div>
-                <div class="action-btn" onclick="window.location.href='settings.html'">
-                    <div class="action-icon">⚙️</div>
-                    <span>Settings</span>
+                    <p style="color: #b5a99c; text-align: center; padding: 20px;">Loading cute activities...</p>
                 </div>
             </div>
         </div>
     </div>
 
+    <script src="js/admin.js"></script>
     <script>
-        // Toggle dropdown menu
         const avatarBtn = document.getElementById('avatarBtn');
         const dropdownMenu = document.getElementById('dropdownMenu');
 
@@ -658,127 +787,70 @@
             dropdownMenu.classList.toggle('show');
         });
 
-        // Close dropdown when clicking outside
         document.addEventListener('click', function(e) {
             if (!avatarBtn.contains(e.target) && !dropdownMenu.contains(e.target)) {
                 dropdownMenu.classList.remove('show');
             }
         });
 
-        // Logout function
         function logout() {
             if (confirm('Are you sure you want to logout?')) {
+                localStorage.removeItem('adminToken');
+                localStorage.removeItem('adminUser');
                 window.location.href = 'index.html';
             }
         }
 
-        // Animate numbers when they appear
-        function animateNumber(element, target) {
-            if (!element) return;
-            let current = 0;
-            const increment = target / 50;
-            const timer = setInterval(() => {
-                current += increment;
-                if (current >= target) {
-                    element.textContent = target.toLocaleString();
-                    clearInterval(timer);
-                } else {
-                    element.textContent = Math.floor(current).toLocaleString();
-                }
-            }, 20);
+        function toggleNotifications() {
+            dropdownMenu.classList.toggle('show');
         }
 
-        // Update status bars with real data
-        function updateStatusBars() {
-            // Get posts from localStorage
-            const posts = JSON.parse(localStorage.getItem('pawsociety_posts')) || [];
-            
-            const lostCount = posts.filter(p => p.status === 'Lost').length;
-            const foundCount = posts.filter(p => p.status === 'Found').length;
-            const adoptionCount = posts.filter(p => p.status === 'Adoption').length;
-            const total = posts.length || 1; // Prevent division by zero
-            
-            const lostPercent = ((lostCount / total) * 100).toFixed(1);
-            const foundPercent = ((foundCount / total) * 100).toFixed(1);
-            const adoptionPercent = ((adoptionCount / total) * 100).toFixed(1);
-            
-            // Update numbers
-            document.getElementById('lost-count').textContent = lostCount;
-            document.getElementById('found-count').textContent = foundCount;
-            document.getElementById('adoption-count').textContent = adoptionCount;
-            
-            // Update bars
-            const lostBar = document.getElementById('lost-bar');
-            const foundBar = document.getElementById('found-bar');
-            const adoptionBar = document.getElementById('adoption-bar');
-            
-            if (lostBar) {
-                lostBar.style.transition = 'width 1s ease-in-out';
-                lostBar.style.width = lostPercent + '%';
-            }
-            if (foundBar) {
-                foundBar.style.transition = 'width 1s ease-in-out';
-                foundBar.style.width = foundPercent + '%';
-            }
-            if (adoptionBar) {
-                adoptionBar.style.transition = 'width 1s ease-in-out';
-                adoptionBar.style.width = adoptionPercent + '%';
-            }
-            
-            // Update percentages
-            document.getElementById('lost-percent').textContent = lostPercent + '%';
-            document.getElementById('found-percent').textContent = foundPercent + '%';
-            document.getElementById('adoption-percent').textContent = adoptionPercent + '%';
-
-            // Update stats cards
-            const users = JSON.parse(localStorage.getItem('pawsociety_users')) || [];
-            document.getElementById('total-users').textContent = users.length;
-            document.getElementById('total-posts').textContent = posts.length;
-            document.getElementById('lost-pets').textContent = lostCount;
-            document.getElementById('adoptions').textContent = adoptionCount;
-
-            // Animate numbers
-            animateNumber(document.getElementById('total-users'), users.length);
-            animateNumber(document.getElementById('total-posts'), posts.length);
-            animateNumber(document.getElementById('lost-pets'), lostCount);
-            animateNumber(document.getElementById('adoptions'), adoptionCount);
+        let currentYear = 2026;
+        let growthChart = null;
+        
+        function toggleYear() {
+            currentYear = currentYear === 2026 ? 2025 : 2026;
+            document.getElementById('selectedYear').textContent = currentYear;
+            loadDashboardData();
         }
 
-        // Animate user growth bars
-        function animateUserGrowth() {
-            const bars = document.querySelectorAll('.growth-bar');
-            const heights = [60, 80, 100, 120, 140, 160, 180];
+        function updateLineChart(userGrowth) {
+            const ctx = document.getElementById('userGrowthChart').getContext('2d');
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
             
-            bars.forEach((bar, index) => {
-                if (bar) {
-                    bar.style.height = '0px';
-                    setTimeout(() => {
-                        bar.style.transition = 'height 1s ease-in-out';
-                        bar.style.height = heights[index] + 'px';
-                    }, 300 + (index * 100));
+            if (growthChart) growthChart.destroy();
+            
+            growthChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: 'New Users',
+                        data: userGrowth,
+                        borderColor: '#7A4F2B',
+                        backgroundColor: 'rgba(122, 79, 43, 0.1)',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#B88B4A',
+                        pointBorderColor: 'white',
+                        pointBorderWidth: 2,
+                        pointRadius: 5,
+                        pointHoverRadius: 7,
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }
                 }
             });
         }
 
-        // Load and animate dashboard on page load
         document.addEventListener('DOMContentLoaded', function() {
-            // Update stats with real data
-            updateStatusBars();
-            
-            // Animate user growth bars
-            animateUserGrowth();
-            
-            // Update stats every 30 seconds (real-time)
-            setInterval(updateStatusBars, 30000);
-        });
-
-        // Listen for real-time updates (when posts are added/deleted)
-        window.addEventListener('storage', function(e) {
-            if (e.key === 'pawsociety_posts' || e.key === 'pawsociety_users') {
-                updateStatusBars();
-            }
+            loadDashboardData();
+            setInterval(loadDashboardData, 30000);
         });
     </script>
-    <script src="js/admin.js"></script>
 </body>
 </html>

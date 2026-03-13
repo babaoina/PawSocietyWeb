@@ -11,28 +11,30 @@ const PORT = 3000;
 const authRoutes = require('./routes/auth');
 const adminRoutes = require('./routes/admin');
 
+// ✅ THESE TWO LINES ARE CRITICAL - THEY MUST BE HERE!
+app.use(express.json());  // THIS PARSES JSON BODIES
+app.use(express.urlencoded({ extended: true }));
+
 // Middleware
 app.use(cors({
   origin: ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://192.168.254.100:3000'],
   credentials: true
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, '../admin-pawsociety')));
 
-// MongoDB Connection - Connect to YOUR APP DATABASE
+// MongoDB Connection
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/pawsociety';
 
 mongoose.connect(MONGODB_URI)
   .then(() => {
-    console.log('✅ WEB BACKEND: Connected to MongoDB (your app database)');
+    console.log('✅ WEB BACKEND: Connected to MongoDB');
   })
   .catch((error) => {
     console.error('❌ WEB BACKEND: MongoDB connection error:', error);
     process.exit(1);
   });
 
-// API Routes
+// API Routes - THESE COME AFTER the middleware
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 

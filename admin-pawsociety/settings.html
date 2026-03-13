@@ -3,18 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PawSociety - Admin Settings</title>
-    <link rel="stylesheet" href="style.css">
+    <title>PawSociety - Settings ⚙️</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Poppins', sans-serif;
         }
 
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
         body {
-            background: #F5E6D3;
+            background: #fdf8f4;
             min-height: 100vh;
         }
 
@@ -31,10 +33,62 @@
             right: 0;
             z-index: 1000;
             height: 70px;
+            box-shadow: 0 4px 15px rgba(122, 79, 43, 0.2);
         }
 
         .logo h1 {
             font-size: 24px;
+            font-weight: 600;
+        }
+
+        .logo span {
+            font-weight: 300;
+            opacity: 0.9;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+        }
+
+        .notification-container {
+            position: relative;
+            cursor: pointer;
+        }
+
+        .notification-bell {
+            font-size: 24px;
+            color: white;
+            transition: transform 0.2s;
+        }
+
+        .notification-bell:hover {
+            transform: scale(1.1);
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #f44336;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            border: 2px solid white;
+            animation: ping 1.5s infinite;
+        }
+
+        @keyframes ping {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
         }
 
         .admin-profile {
@@ -50,7 +104,7 @@
         }
 
         .admin-name .name {
-            font-weight: bold;
+            font-weight: 600;
         }
 
         .admin-name .role {
@@ -59,36 +113,38 @@
         }
 
         .avatar {
-            width: 40px;
-            height: 40px;
+            width: 45px;
+            height: 45px;
             background: #B88B4A;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: bold;
+            font-weight: 600;
+            font-size: 18px;
             cursor: pointer;
             transition: all 0.3s;
+            border: 2px solid #ffd89c;
         }
 
         .avatar:hover {
             background: #DAA520;
-            transform: scale(1.05);
+            transform: scale(1.05) rotate(5deg);
         }
 
-        /* Dropdown Menu */
         .dropdown-menu {
             position: absolute;
             top: 60px;
             right: 0;
             background: white;
-            border-radius: 8px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
-            width: 150px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(122, 79, 43, 0.15);
+            width: 220px;
             display: none;
             z-index: 1001;
             overflow: hidden;
             animation: slideDown 0.3s ease;
+            border: 1px solid #ffe4cc;
         }
 
         .dropdown-menu.show {
@@ -96,28 +152,24 @@
         }
 
         .dropdown-item {
-            padding: 12px 16px;
+            padding: 14px 18px;
             display: flex;
             align-items: center;
             gap: 12px;
-            color: #333;
+            color: #4a3b2f;
             cursor: pointer;
             transition: all 0.2s;
+            font-weight: 500;
         }
 
         .dropdown-item:hover {
-            background: #F5E6D3;
+            background: #fdf1e6;
             color: #7A4F2B;
         }
 
         .dropdown-item.logout:hover {
-            background: #FFEBEE;
-            color: #F44336;
-        }
-
-        .dropdown-icon {
-            font-size: 18px;
-            width: 24px;
+            background: #ffe6e6;
+            color: #f44336;
         }
 
         @keyframes slideDown {
@@ -138,117 +190,150 @@
         }
 
         .sidebar {
-            width: 250px;
+            width: 260px;
             background: white;
-            padding: 20px 0;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.05);
+            padding: 25px 0;
+            box-shadow: 2px 0 20px rgba(122, 79, 43, 0.05);
             position: fixed;
             height: calc(100vh - 70px);
             overflow-y: auto;
+            border-radius: 0 20px 0 0;
         }
 
         .menu-item {
-            padding: 12px 25px;
+            padding: 14px 25px;
             display: flex;
             align-items: center;
-            gap: 12px;
-            color: #666;
+            gap: 15px;
+            color: #8b7a6a;
             cursor: pointer;
             transition: all 0.3s;
-            border-left: 3px solid transparent;
+            border-left: 4px solid transparent;
+            margin: 5px 0;
+            font-weight: 500;
         }
 
         .menu-item:hover {
-            background: #F5E6D3;
+            background: #fdf1e6;
             color: #7A4F2B;
+            border-left-color: #B88B4A;
         }
 
         .menu-item.active {
-            background: #F5E6D3;
+            background: #fdf1e6;
             color: #7A4F2B;
             border-left-color: #7A4F2B;
-            font-weight: bold;
+            font-weight: 600;
         }
 
         .menu-icon {
-            font-size: 20px;
+            font-size: 22px;
         }
 
         .main-content {
             flex: 1;
-            padding: 30px;
-            margin-left: 250px;
+            padding: 35px;
+            margin-left: 260px;
         }
 
-        .page-title {
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 30px;
         }
 
-        .page-title h2 {
+        .page-header h2 {
             color: #7A4F2B;
+            font-size: 32px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .page-header h2 i {
             font-size: 28px;
+            color: #B88B4A;
         }
 
         .settings-nav {
             display: flex;
             gap: 10px;
             margin-bottom: 30px;
-            border-bottom: 2px solid #F0F0F0;
-            padding-bottom: 10px;
             flex-wrap: wrap;
         }
 
         .settings-tab {
-            padding: 10px 20px;
+            background: white;
+            padding: 12px 25px;
+            border-radius: 40px;
             cursor: pointer;
-            border-radius: 5px 5px 0 0;
-            color: #666;
-            transition: all 0.3s;
+            font-weight: 500;
+            color: #8b7a6a;
+            border: 2px solid #ffdec2;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .settings-tab:hover {
-            background: #F5E6D3;
+            background: #fdf1e6;
             color: #7A4F2B;
+            border-color: #B88B4A;
         }
 
         .settings-tab.active {
             background: #7A4F2B;
             color: white;
+            border-color: #7A4F2B;
         }
 
         .settings-section {
             background: white;
-            border-radius: 10px;
-            padding: 30px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            padding: 35px;
+            border-radius: 40px;
+            border: 2px solid #ffdec2;
+            display: none;
+        }
+
+        .settings-section.active {
             display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .settings-group {
-            margin-bottom: 30px;
-            padding-bottom: 30px;
-            border-bottom: 1px solid #F0F0F0;
+            margin-bottom: 35px;
+            padding-bottom: 35px;
+            border-bottom: 2px dashed #ffdec2;
         }
 
         .settings-group:last-child {
             border-bottom: none;
-            margin-bottom: 0;
-            padding-bottom: 0;
         }
 
         .settings-group h3 {
             color: #7A4F2B;
-            margin-bottom: 20px;
-            font-size: 18px;
+            margin-bottom: 25px;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .setting-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             flex-wrap: wrap;
-            gap: 15px;
+            gap: 20px;
         }
 
         .setting-info {
@@ -257,14 +342,14 @@
 
         .setting-info label {
             display: block;
-            color: #333;
-            font-weight: bold;
+            color: #4a3b2f;
+            font-weight: 600;
             margin-bottom: 5px;
-            font-size: 14px;
+            font-size: 16px;
         }
 
         .setting-info .description {
-            color: #999;
+            color: #b5a99c;
             font-size: 13px;
         }
 
@@ -272,20 +357,25 @@
             width: 300px;
         }
 
-        .setting-control input, .setting-control select {
+        .setting-control input, .setting-control select, .setting-control textarea {
             width: 100%;
-            padding: 10px;
-            border: 1px solid #F0F0F0;
-            border-radius: 5px;
+            padding: 14px;
+            border: 2px solid #ffdec2;
+            border-radius: 20px;
             font-size: 14px;
-            height: 42px;
+            background: #fff9f5;
+        }
+
+        .setting-control input:focus, .setting-control select:focus, .setting-control textarea:focus {
+            outline: none;
+            border-color: #B88B4A;
         }
 
         .toggle-switch {
-            width: 50px;
-            height: 24px;
-            background: #F0F0F0;
-            border-radius: 12px;
+            width: 60px;
+            height: 30px;
+            background: #ffdec2;
+            border-radius: 30px;
             position: relative;
             cursor: pointer;
             flex-shrink: 0;
@@ -296,120 +386,137 @@
         }
 
         .toggle-slider {
-            width: 20px;
-            height: 20px;
+            width: 26px;
+            height: 26px;
             background: white;
             border-radius: 50%;
             position: absolute;
             top: 2px;
             left: 2px;
             transition: left 0.3s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
 
         .toggle-switch.active .toggle-slider {
-            left: 28px;
+            left: 32px;
         }
 
         .save-button {
             background: #7A4F2B;
             color: white;
             border: none;
-            padding: 12px 30px;
-            border-radius: 5px;
+            padding: 16px 40px;
+            border-radius: 40px;
             cursor: pointer;
-            font-weight: bold;
+            font-weight: 600;
             font-size: 16px;
-            margin-top: 20px;
-            transition: all 0.3s;
+            margin-top: 25px;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .save-button:hover {
             background: #B88B4A;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transform: scale(1.02);
         }
 
         .danger-zone {
-            background: #FFF1F0;
-            border: 1px solid #F44336;
-            border-radius: 10px;
-            padding: 20px;
-            margin-top: 30px;
+            background: #fff2f0;
+            border: 2px solid #f44336;
+            border-radius: 30px;
+            padding: 25px;
+            margin-top: 35px;
         }
 
         .danger-zone h4 {
-            color: #F44336;
+            color: #f44336;
             margin-bottom: 10px;
             font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .danger-zone p {
             color: #666;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
 
         .danger-button {
-            background: #F44336;
+            background: #f44336;
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
+            padding: 12px 25px;
+            border-radius: 30px;
             cursor: pointer;
-            font-weight: bold;
+            font-weight: 600;
             margin-right: 10px;
             margin-bottom: 10px;
-            transition: all 0.3s;
         }
 
         .danger-button:hover {
-            background: #D32F2F;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            background: #d32f2f;
         }
 
-        @media (max-width: 768px) {
-            .sidebar {
-                width: 100%;
-                position: relative;
-                height: auto;
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
             }
-            
-            .main-content {
-                margin-left: 0;
+            to {
+                transform: translateX(0);
+                opacity: 1;
             }
-            
-            .container {
-                flex-direction: column;
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
             }
-            
-            .setting-item {
-                flex-direction: column;
-                align-items: flex-start;
+            to {
+                transform: translateX(100%);
+                opacity: 0;
             }
-            
-            .setting-control {
-                width: 100%;
-            }
+        }
+
+        #toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
         }
     </style>
 </head>
 <body>
     <div class="header">
         <div class="logo">
-            <h1>PawSociety <span>Admin</span></h1>
+            <h1>PawSociety <span>🐾 Admin</span></h1>
         </div>
-        <div class="admin-profile" id="adminProfile">
-            <div class="admin-name">
-                <div class="name" id="adminName">Admin User</div>
-                <div class="role" id="adminRole">Super Admin</div>
+        <div class="header-right">
+            <div class="notification-container" id="notificationBell" onclick="toggleNotifications()">
+                <i class="fas fa-bell notification-bell"></i>
+                <span class="notification-badge" id="notificationBadge">0</span>
             </div>
-            <div class="avatar" id="avatarBtn">A</div>
             
-            <!-- Dropdown Menu - ONLY LOGOUT -->
-            <div class="dropdown-menu" id="dropdownMenu">
-                <div class="dropdown-item logout" onclick="logout()">
-                    <span class="dropdown-icon">🚪</span>
-                    <span>Logout</span>
+            <div class="admin-profile" id="adminProfile">
+                <div class="admin-name">
+                    <div class="name" id="adminName">Admin User</div>
+                    <div class="role" id="adminRole">Super Admin</div>
+                </div>
+                <div class="avatar" id="avatarBtn">🐶</div>
+                
+                <div class="dropdown-menu" id="dropdownMenu">
+                    <div class="dropdown-item" onclick="window.location.href='settings.html'">
+                        <i class="fas fa-cog"></i>
+                        <span>Settings</span>
+                    </div>
+                    <div class="dropdown-item logout" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Logout</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -417,103 +524,118 @@
 
     <div class="container">
         <div class="sidebar">
-            <!-- REARRANGED MENU: Dashboard → Posts → Users → Reports → Settings -->
             <div class="menu-item" onclick="window.location.href='dashboard.html'">
-                <span class="menu-icon">📊</span>
+                <i class="fas fa-home menu-icon"></i>
                 <span>Dashboard</span>
             </div>
             <div class="menu-item" onclick="window.location.href='posts.html'">
-                <span class="menu-icon">📝</span>
+                <i class="fas fa-paw menu-icon"></i>
                 <span>Posts</span>
             </div>
             <div class="menu-item" onclick="window.location.href='users.html'">
-                <span class="menu-icon">👥</span>
+                <i class="fas fa-users menu-icon"></i>
                 <span>Users</span>
             </div>
             <div class="menu-item" onclick="window.location.href='reports.html'">
-                <span class="menu-icon">📈</span>
+                <i class="fas fa-chart-bar menu-icon"></i>
                 <span>Reports</span>
             </div>
             <div class="menu-item active" onclick="window.location.href='settings.html'">
-                <span class="menu-icon">⚙️</span>
+                <i class="fas fa-cog menu-icon"></i>
                 <span>Settings</span>
             </div>
-            <!-- LOGOUT REMOVED FROM SIDEBAR -->
         </div>
 
         <div class="main-content">
-            <div class="page-title">
-                <h2>Admin Settings</h2>
+            <div class="page-header">
+                <h2>
+                    <i class="fas fa-cog"></i>
+                    App Settings
+                </h2>
             </div>
 
             <div class="settings-nav">
-                <div class="settings-tab active" onclick="switchTab('general')">General</div>
-                <div class="settings-tab" onclick="switchTab('security')">Security</div>
-                <div class="settings-tab" onclick="switchTab('notifications')">Notifications</div>
-                <div class="settings-tab" onclick="switchTab('moderation')">Moderation</div>
-                <div class="settings-tab" onclick="switchTab('api')">API</div>
+                <div class="settings-tab active" onclick="switchTab('general')">
+                    <i class="fas fa-sliders-h"></i> General
+                </div>
+                <div class="settings-tab" onclick="switchTab('security')">
+                    <i class="fas fa-shield-alt"></i> Security
+                </div>
+                <div class="settings-tab" onclick="switchTab('notifications')">
+                    <i class="fas fa-bell"></i> Notifications
+                </div>
+                <div class="settings-tab" onclick="switchTab('moderation')">
+                    <i class="fas fa-gavel"></i> Moderation
+                </div>
+                <div class="settings-tab" onclick="switchTab('api')">
+                    <i class="fas fa-code"></i> API
+                </div>
             </div>
 
-            <!-- General Settings -->
-            <div class="settings-section" id="general-settings">
+            <div class="settings-section active" id="general-settings">
                 <div class="settings-group">
-                    <h3>General Settings</h3>
+                    <h3><i class="fas fa-globe"></i> General Settings</h3>
                     
                     <div class="setting-item">
                         <div class="setting-info">
-                            <label>Site Name</label>
-                            <div class="description">The name of your website</div>
+                            <label>App Name</label>
+                            <div class="description">Name shown in app and notifications</div>
                         </div>
                         <div class="setting-control">
-                            <input type="text" value="PawSociety" id="siteName">
+                            <input type="text" value="PawSociety" id="appName">
                         </div>
                     </div>
 
                     <div class="setting-item">
                         <div class="setting-info">
-                            <label>Site Description</label>
-                            <div class="description">Brief description of your site</div>
+                            <label>Support Email</label>
+                            <div class="description">Where users can contact for help</div>
                         </div>
                         <div class="setting-control">
-                            <input type="text" value="Because Every Pet Deserves a Home" id="siteDescription">
+                            <input type="email" value="support@pawsociety.com" id="supportEmail">
                         </div>
                     </div>
 
                     <div class="setting-item">
                         <div class="setting-info">
-                            <label>Contact Email</label>
-                            <div class="description">Primary contact email address</div>
+                            <label>Minimum App Version</label>
+                            <div class="description">Force update below this version</div>
                         </div>
                         <div class="setting-control">
-                            <input type="email" value="admin@pawsociety.com" id="contactEmail">
+                            <input type="text" value="1.0.0" id="minVersion">
                         </div>
                     </div>
 
                     <div class="setting-item">
                         <div class="setting-info">
-                            <label>Timezone</label>
-                            <div class="description">Default timezone for the site</div>
+                            <label>Maintenance Mode</label>
+                            <div class="description">Disable app for maintenance</div>
                         </div>
                         <div class="setting-control">
-                            <select id="timezone">
-                                <option value="UTC">UTC</option>
-                                <option value="EST">Eastern Time</option>
-                                <option value="PST" selected>Pacific Time</option>
-                                <option value="GMT">GMT</option>
-                                <option value="CST">Central Time</option>
-                                <option value="MST">Mountain Time</option>
-                            </select>
+                            <div class="toggle-switch" onclick="toggleSwitch(this)" id="maintenanceMode">
+                                <div class="toggle-slider"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <label>Maintenance Message</label>
+                            <div class="description">Message shown to users during maintenance</div>
+                        </div>
+                        <div class="setting-control">
+                            <textarea rows="3" id="maintenanceMessage">PawSociety is under maintenance. We'll be back soon! 🐾</textarea>
                         </div>
                     </div>
                 </div>
 
                 <div class="settings-group">
-                    <h3>Registration Settings</h3>
+                    <h3><i class="fas fa-user-plus"></i> Registration Controls</h3>
                     
                     <div class="setting-item">
                         <div class="setting-info">
                             <label>Allow New Registrations</label>
-                            <div class="description">Allow new users to register</div>
+                            <div class="description">Let new users join the app</div>
                         </div>
                         <div class="setting-control">
                             <div class="toggle-switch active" onclick="toggleSwitch(this)" id="allowRegistration">
@@ -525,7 +647,7 @@
                     <div class="setting-item">
                         <div class="setting-info">
                             <label>Email Verification</label>
-                            <div class="description">Require email verification for new accounts</div>
+                            <div class="description">Require email verification before posting</div>
                         </div>
                         <div class="setting-control">
                             <div class="toggle-switch active" onclick="toggleSwitch(this)" id="emailVerification">
@@ -536,146 +658,142 @@
 
                     <div class="setting-item">
                         <div class="setting-info">
-                            <label>Default User Role</label>
-                            <div class="description">Default role for new users</div>
+                            <label>Phone Verification</label>
+                            <div class="description">Require phone verification</div>
                         </div>
                         <div class="setting-control">
-                            <select id="defaultRole">
-                                <option value="user" selected>User</option>
-                                <option value="moderator">Moderator</option>
-                                <option value="admin">Admin</option>
-                            </select>
+                            <div class="toggle-switch" onclick="toggleSwitch(this)" id="phoneVerification">
+                                <div class="toggle-slider"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <button class="save-button" onclick="saveSettings()">Save Changes</button>
+                <button class="save-button" onclick="saveSettings('general')">
+                    <i class="fas fa-save"></i> Save General Settings
+                </button>
             </div>
 
-            <!-- Security Settings -->
-            <div class="settings-section" id="security-settings" style="display: none;">
+            <div class="settings-section" id="security-settings">
                 <div class="settings-group">
-                    <h3>Security Settings</h3>
+                    <h3><i class="fas fa-lock"></i> Security Settings</h3>
                     
                     <div class="setting-item">
                         <div class="setting-info">
-                            <label>Two-Factor Authentication</label>
-                            <div class="description">Require 2FA for admin accounts</div>
+                            <label>Maximum Login Attempts</label>
+                            <div class="description">Lock account after X failed attempts</div>
                         </div>
                         <div class="setting-control">
-                            <div class="toggle-switch" onclick="toggleSwitch(this)" id="twoFactorAuth">
-                                <div class="toggle-slider"></div>
-                            </div>
+                            <input type="number" value="5" min="3" max="10" id="maxLoginAttempts">
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <label>Lockout Duration</label>
+                            <div class="description">Minutes account stays locked</div>
+                        </div>
+                        <div class="setting-control">
+                            <input type="number" value="30" min="5" max="120" id="lockoutDuration">
                         </div>
                     </div>
 
                     <div class="setting-item">
                         <div class="setting-info">
                             <label>Session Timeout</label>
-                            <div class="description">Minutes before session expires</div>
+                            <div class="description">Auto logout after X minutes</div>
                         </div>
                         <div class="setting-control">
-                            <input type="number" value="120" min="5" max="1440" id="sessionTimeout">
+                            <input type="number" value="120" min="15" max="1440" id="sessionTimeout">
                         </div>
                     </div>
 
                     <div class="setting-item">
                         <div class="setting-info">
-                            <label>Password Complexity</label>
-                            <div class="description">Minimum password requirements</div>
+                            <label>Require 2FA for Admins</label>
+                            <div class="description">Two-factor authentication for admin accounts</div>
                         </div>
                         <div class="setting-control">
-                            <select id="passwordComplexity">
-                                <option value="basic">Basic (6+ characters)</option>
-                                <option value="medium" selected>Medium (8+ chars, 1 number)</option>
-                                <option value="strong">Strong (10+ chars, mixed case, numbers, symbols)</option>
+                            <div class="toggle-switch" onclick="toggleSwitch(this)" id="admin2FA">
+                                <div class="toggle-slider"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="save-button" onclick="saveSettings('security')">
+                    <i class="fas fa-save"></i> Save Security Settings
+                </button>
+            </div>
+
+            <div class="settings-section" id="notifications-settings">
+                <div class="settings-group">
+                    <h3><i class="fas fa-bell"></i> Push Notification Settings</h3>
+                    
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <label>Enable Push Notifications</label>
+                            <div class="description">Master switch for all push notifications</div>
+                        </div>
+                        <div class="setting-control">
+                            <div class="toggle-switch active" onclick="toggleSwitch(this)" id="pushEnabled">
+                                <div class="toggle-slider"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <label>Notification Types</label>
+                            <div class="description">Choose which notifications to send</div>
+                        </div>
+                        <div class="setting-control">
+                            <select id="notificationTypes" multiple size="4" style="height: auto;">
+                                <option value="like" selected>👍 Likes</option>
+                                <option value="comment" selected>💬 Comments</option>
+                                <option value="follow" selected>👥 Follows</option>
+                                <option value="message" selected>📨 Messages</option>
                             </select>
                         </div>
                     </div>
 
                     <div class="setting-item">
                         <div class="setting-info">
-                            <label>Login Attempts</label>
-                            <div class="description">Max login attempts before lockout</div>
+                            <label>Quiet Hours Start</label>
+                            <div class="description">Don't send notifications after this time</div>
                         </div>
                         <div class="setting-control">
-                            <input type="number" value="5" min="1" max="10" id="maxLoginAttempts">
+                            <input type="time" value="22:00" id="quietStart">
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <label>Quiet Hours End</label>
+                            <div class="description">Resume notifications after this time</div>
+                        </div>
+                        <div class="setting-control">
+                            <input type="time" value="08:00" id="quietEnd">
                         </div>
                     </div>
                 </div>
 
-                <button class="save-button" onclick="saveSettings()">Save Changes</button>
+                <button class="save-button" onclick="saveSettings('notifications')">
+                    <i class="fas fa-save"></i> Save Notification Settings
+                </button>
             </div>
 
-            <!-- Notification Settings -->
-            <div class="settings-section" id="notification-settings" style="display: none;">
+            <div class="settings-section" id="moderation-settings">
                 <div class="settings-group">
-                    <h3>Email Notifications</h3>
-                    
-                    <div class="setting-item">
-                        <div class="setting-info">
-                            <label>New User Registration</label>
-                            <div class="description">Send email when new user registers</div>
-                        </div>
-                        <div class="setting-control">
-                            <div class="toggle-switch active" onclick="toggleSwitch(this)" id="notifyNewUser">
-                                <div class="toggle-slider"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="setting-item">
-                        <div class="setting-info">
-                            <label>New Post Created</label>
-                            <div class="description">Send email when new post is created</div>
-                        </div>
-                        <div class="setting-control">
-                            <div class="toggle-switch active" onclick="toggleSwitch(this)" id="notifyNewPost">
-                                <div class="toggle-slider"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="setting-item">
-                        <div class="setting-info">
-                            <label>Reported Content</label>
-                            <div class="description">Send email when content is reported</div>
-                        </div>
-                        <div class="setting-control">
-                            <div class="toggle-switch active" onclick="toggleSwitch(this)" id="notifyReported">
-                                <div class="toggle-slider"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="setting-item">
-                        <div class="setting-info">
-                            <label>Daily Summary</label>
-                            <div class="description">Receive daily activity summary</div>
-                        </div>
-                        <div class="setting-control">
-                            <div class="toggle-switch" onclick="toggleSwitch(this)" id="dailySummary">
-                                <div class="toggle-slider"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <button class="save-button" onclick="saveSettings()">Save Changes</button>
-            </div>
-
-            <!-- Moderation Settings -->
-            <div class="settings-section" id="moderation-settings" style="display: none;">
-                <div class="settings-group">
-                    <h3>Content Moderation</h3>
+                    <h3><i class="fas fa-shield-alt"></i> Moderation Settings</h3>
                     
                     <div class="setting-item">
                         <div class="setting-info">
                             <label>Auto-Approve Posts</label>
-                            <div class="description">Automatically approve new posts</div>
+                            <div class="description">Posts go live immediately without review</div>
                         </div>
                         <div class="setting-control">
-                            <div class="toggle-switch" onclick="toggleSwitch(this)" id="autoApprovePosts">
+                            <div class="toggle-switch" onclick="toggleSwitch(this)" id="autoApprove">
                                 <div class="toggle-slider"></div>
                             </div>
                         </div>
@@ -683,11 +801,11 @@
 
                     <div class="setting-item">
                         <div class="setting-info">
-                            <label>Require Post Approval</label>
-                            <div class="description">Posts need admin approval before publishing</div>
+                            <label>Profanity Filter</label>
+                            <div class="description">Automatically block profanity</div>
                         </div>
                         <div class="setting-control">
-                            <div class="toggle-switch active" onclick="toggleSwitch(this)" id="requireApproval">
+                            <div class="toggle-switch active" onclick="toggleSwitch(this)" id="profanityFilter">
                                 <div class="toggle-slider"></div>
                             </div>
                         </div>
@@ -695,8 +813,8 @@
 
                     <div class="setting-item">
                         <div class="setting-info">
-                            <label>Flagged Content Threshold</label>
-                            <div class="description">Number of flags before auto-hide</div>
+                            <label>Flag Threshold</label>
+                            <div class="description">Auto-hide post after X reports</div>
                         </div>
                         <div class="setting-control">
                             <input type="number" value="3" min="1" max="10" id="flagThreshold">
@@ -705,24 +823,23 @@
 
                     <div class="setting-item">
                         <div class="setting-info">
-                            <label>Profanity Filter</label>
-                            <div class="description">Automatically filter profanity in posts</div>
+                            <label>Blocked Words</label>
+                            <div class="description">Custom words to block (comma separated)</div>
                         </div>
                         <div class="setting-control">
-                            <div class="toggle-switch active" onclick="toggleSwitch(this)" id="profanityFilter">
-                                <div class="toggle-slider"></div>
-                            </div>
+                            <textarea rows="3" id="blockedWords">spam, scam, inappropriate</textarea>
                         </div>
                     </div>
                 </div>
 
-                <button class="save-button" onclick="saveSettings()">Save Changes</button>
+                <button class="save-button" onclick="saveSettings('moderation')">
+                    <i class="fas fa-save"></i> Save Moderation Settings
+                </button>
             </div>
 
-            <!-- API Settings -->
-            <div class="settings-section" id="api-settings" style="display: none;">
+            <div class="settings-section" id="api-settings">
                 <div class="settings-group">
-                    <h3>API Settings</h3>
+                    <h3><i class="fas fa-code"></i> API Settings</h3>
                     
                     <div class="setting-item">
                         <div class="setting-info">
@@ -738,55 +855,54 @@
 
                     <div class="setting-item">
                         <div class="setting-info">
-                            <label>API Key</label>
-                            <div class="description">Your API access key</div>
-                        </div>
-                        <div class="setting-control">
-                            <input type="text" value="pk_live_xxxxxxxxxxxxx" readonly id="apiKey">
-                        </div>
-                    </div>
-
-                    <div class="setting-item">
-                        <div class="setting-info">
-                            <label>Rate Limiting</label>
+                            <label>Rate Limit</label>
                             <div class="description">Requests per minute per IP</div>
                         </div>
                         <div class="setting-control">
-                            <input type="number" value="60" min="1" max="1000" id="rateLimit">
+                            <input type="number" value="60" min="10" max="1000" id="rateLimit">
                         </div>
                     </div>
 
                     <div class="setting-item">
                         <div class="setting-info">
-                            <label>API Documentation</label>
-                            <div class="description">Access API documentation</div>
+                            <label>Allowed Origins</label>
+                            <div class="description">CORS allowed domains (comma separated)</div>
                         </div>
                         <div class="setting-control">
-                            <button class="btn" onclick="window.open('/api-docs', '_blank')" style="padding: 8px 15px; background: #7A4F2B; color: white; border: none; border-radius: 5px; cursor: pointer;">View Docs</button>
+                            <textarea rows="2" id="allowedOrigins">http://localhost:3000, http://192.168.254.100:3000</textarea>
                         </div>
                     </div>
                 </div>
 
-                <button class="save-button" onclick="saveSettings()">Save Changes</button>
+                <button class="save-button" onclick="saveSettings('api')">
+                    <i class="fas fa-save"></i> Save API Settings
+                </button>
             </div>
 
             <div class="danger-zone">
-                <h4>⚠️ Danger Zone</h4>
-                <p>These actions are irreversible. Please proceed with caution.</p>
-                <button class="danger-button" onclick="clearCache()">Clear System Cache</button>
-                <button class="danger-button" onclick="resetSettings()">Reset All Settings</button>
-                <button class="danger-button" onclick="deleteAllData()" style="background: #F44336;">Delete All Data</button>
+                <h4><i class="fas fa-exclamation-triangle"></i> Emergency Controls</h4>
+                <p>These actions affect your live app immediately. Use with caution!</p>
+                <button class="danger-button" onclick="emergencyAction('disable')">
+                    <i class="fas fa-power-off"></i> Disable All Posts
+                </button>
+                <button class="danger-button" onclick="emergencyAction('clear')">
+                    <i class="fas fa-broom"></i> Clear All Notifications
+                </button>
+                <button class="danger-button" onclick="emergencyAction('cache')">
+                    <i class="fas fa-database"></i> Clear App Cache
+                </button>
+                <button class="danger-button" onclick="emergencyAction('backup')">
+                    <i class="fas fa-cloud-download-alt"></i> Force Database Backup
+                </button>
+                <button class="danger-button" onclick="emergencyAction('reset')" style="background: #f44336;">
+                    <i class="fas fa-skull-crossbones"></i> RESET ALL APP DATA
+                </button>
             </div>
         </div>
     </div>
 
+    <script src="js/admin.js"></script>
     <script>
-        // Check authentication
-        if (!localStorage.getItem('adminToken')) {
-            window.location.href = 'index.html';
-        }
-
-        // Toggle dropdown menu
         const avatarBtn = document.getElementById('avatarBtn');
         const dropdownMenu = document.getElementById('dropdownMenu');
 
@@ -795,177 +911,12 @@
             dropdownMenu.classList.toggle('show');
         });
 
-        // Close dropdown when clicking outside
         document.addEventListener('click', function(e) {
             if (!avatarBtn.contains(e.target) && !dropdownMenu.contains(e.target)) {
                 dropdownMenu.classList.remove('show');
             }
         });
 
-        // Tab switching function
-        function switchTab(tabName) {
-            // Hide all sections
-            document.querySelectorAll('.settings-section').forEach(section => {
-                section.style.display = 'none';
-            });
-            
-            // Show selected section
-            const section = document.getElementById(tabName + '-settings');
-            if (section) {
-                section.style.display = 'block';
-            }
-            
-            // Update tab styling
-            document.querySelectorAll('.settings-tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            
-            // Find and activate the clicked tab
-            event.target.classList.add('active');
-        }
-
-        // Toggle switch function
-        function toggleSwitch(element) {
-            element.classList.toggle('active');
-        }
-
-        // Load settings from API
-        async function loadSettings() {
-            try {
-                const token = localStorage.getItem('adminToken');
-                const response = await fetch('http://localhost:3000/api/admin/settings', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                
-                if (response.ok) {
-                    const settings = await response.json();
-                    
-                    // Update form fields
-                    document.getElementById('siteName').value = settings.siteName || 'PawSociety';
-                    document.getElementById('siteDescription').value = settings.siteDescription || 'Because Every Pet Deserves a Home';
-                    document.getElementById('contactEmail').value = settings.contactEmail || 'admin@pawsociety.com';
-                    document.getElementById('timezone').value = settings.timezone || 'PST';
-                    document.getElementById('defaultRole').value = settings.defaultRole || 'user';
-                    document.getElementById('sessionTimeout').value = settings.sessionTimeout || 120;
-                    
-                    // Update toggle switches
-                    updateToggle('allowRegistration', settings.allowRegistration);
-                    updateToggle('emailVerification', settings.emailVerification);
-                    updateToggle('twoFactorAuth', settings.twoFactorAuth);
-                    updateToggle('autoApprovePosts', settings.autoApprovePosts);
-                    updateToggle('profanityFilter', settings.profanityFilter);
-                }
-            } catch (error) {
-                console.error('Failed to load settings:', error);
-            }
-        }
-
-        function updateToggle(id, value) {
-            const element = document.getElementById(id);
-            if (element) {
-                if (value) {
-                    element.classList.add('active');
-                } else {
-                    element.classList.remove('active');
-                }
-            }
-        }
-
-        // Save settings
-        async function saveSettings() {
-            const settings = {
-                siteName: document.getElementById('siteName')?.value || 'PawSociety',
-                siteDescription: document.getElementById('siteDescription')?.value || '',
-                contactEmail: document.getElementById('contactEmail')?.value || '',
-                timezone: document.getElementById('timezone')?.value || 'PST',
-                allowRegistration: document.getElementById('allowRegistration')?.classList.contains('active') || false,
-                emailVerification: document.getElementById('emailVerification')?.classList.contains('active') || false,
-                defaultRole: document.getElementById('defaultRole')?.value || 'user',
-                twoFactorAuth: document.getElementById('twoFactorAuth')?.classList.contains('active') || false,
-                sessionTimeout: parseInt(document.getElementById('sessionTimeout')?.value) || 120,
-                autoApprovePosts: document.getElementById('autoApprovePosts')?.classList.contains('active') || false,
-                profanityFilter: document.getElementById('profanityFilter')?.classList.contains('active') || false
-            };
-            
-            try {
-                const token = localStorage.getItem('adminToken');
-                const response = await fetch('http://localhost:3000/api/admin/settings', {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify(settings)
-                });
-                
-                if (response.ok) {
-                    alert('Settings saved successfully!');
-                } else {
-                    alert('Failed to save settings');
-                }
-            } catch (error) {
-                console.error('Failed to save settings:', error);
-                alert('Failed to save settings');
-            }
-        }
-
-        // Danger zone functions
-        function clearCache() {
-            if (confirm('Are you sure you want to clear the system cache?')) {
-                alert('Cache cleared successfully! (Demo only)');
-            }
-        }
-
-        function resetSettings() {
-            if (confirm('Are you sure you want to reset all settings to default?')) {
-                // Reset form fields to defaults
-                document.getElementById('siteName').value = 'PawSociety';
-                document.getElementById('siteDescription').value = 'Because Every Pet Deserves a Home';
-                document.getElementById('contactEmail').value = 'admin@pawsociety.com';
-                document.getElementById('timezone').value = 'PST';
-                document.getElementById('defaultRole').value = 'user';
-                document.getElementById('sessionTimeout').value = '120';
-                
-                // Reset toggles
-                document.getElementById('allowRegistration').classList.add('active');
-                document.getElementById('emailVerification').classList.add('active');
-                document.getElementById('twoFactorAuth').classList.remove('active');
-                document.getElementById('autoApprovePosts').classList.remove('active');
-                document.getElementById('profanityFilter').classList.add('active');
-                
-                alert('Settings reset to default!');
-            }
-        }
-
-        async function deleteAllData() {
-            if (confirm('⚠️ WARNING: This will delete ALL non-admin data. Are you ABSOLUTELY sure?')) {
-                const confirmText = prompt('Type "DELETE" to confirm:');
-                if (confirmText === 'DELETE') {
-                    try {
-                        const token = localStorage.getItem('adminToken');
-                        const response = await fetch('http://localhost:3000/api/admin/clear-all-data', {
-                            method: 'POST',
-                            headers: {
-                                'Authorization': `Bearer ${token}`
-                            }
-                        });
-                        
-                        if (response.ok) {
-                            alert('All non-admin data has been cleared.');
-                        } else {
-                            alert('Failed to clear data');
-                        }
-                    } catch (error) {
-                        console.error('Failed to clear data:', error);
-                        alert('Failed to clear data');
-                    }
-                }
-            }
-        }
-
-        // Logout function
         function logout() {
             if (confirm('Are you sure you want to logout?')) {
                 localStorage.removeItem('adminToken');
@@ -974,11 +925,30 @@
             }
         }
 
-        // Load settings on page load
+        function toggleNotifications() {
+            dropdownMenu.classList.toggle('show');
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.settings-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.getElementById(tabName + '-settings').classList.add('active');
+            
+            document.querySelectorAll('.settings-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.closest('.settings-tab').classList.add('active');
+        }
+
+        function toggleSwitch(element) {
+            element.classList.toggle('active');
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
-            loadSettings();
+            loadSettingsData();
+            startNotificationPolling();
         });
     </script>
-    <script src="js/admin.js"></script>
 </body>
 </html>

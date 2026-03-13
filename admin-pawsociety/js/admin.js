@@ -69,71 +69,67 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ===== DASHBOARD FUNCTIONS =====
+// ===== UPDATED DASHBOARD FUNCTION WITH PROFESSIONAL CARDS =====
 async function loadDashboardData() {
     try {
-        console.log('Loading dashboard data...');
-        const stats = await apiRequest('/admin/stats');
+        console.log('Loading dashboard data from API...');
+        const response = await fetch(`${API_BASE_URL}/admin/stats`, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+            }
+        });
         
-        document.getElementById('total-users').textContent = stats.totalUsers || 0;
-        document.getElementById('total-posts').textContent = stats.totalPosts || 0;
-        document.getElementById('lost-pets').textContent = stats.lostPets || 0;
-        document.getElementById('adoptions').textContent = stats.adoptions || 0;
+        if (!response.ok) throw new Error('Failed to load stats');
         
-        if (stats.postsByStatus) {
-            const total = stats.totalPosts || 1;
-            const lostCount = stats.postsByStatus.lost || 0;
-            const foundCount = stats.postsByStatus.found || 0;
-            const adoptionCount = stats.postsByStatus.adoption || 0;
-            
-            document.getElementById('lost-count').textContent = lostCount;
-            document.getElementById('found-count').textContent = foundCount;
-            document.getElementById('adoption-count').textContent = adoptionCount;
-            
-            const lostPercent = ((lostCount / total) * 100).toFixed(1);
-            const foundPercent = ((foundCount / total) * 100).toFixed(1);
-            const adoptionPercent = ((adoptionCount / total) * 100).toFixed(1);
-            
-            const lostBar = document.getElementById('lost-bar');
-            const foundBar = document.getElementById('found-bar');
-            const adoptionBar = document.getElementById('adoption-bar');
-            
-            if (lostBar) {
-                lostBar.style.transition = 'width 0.5s ease-in-out';
-                lostBar.style.width = lostPercent + '%';
-                lostBar.style.background = '#F44336';
-            }
-            if (foundBar) {
-                foundBar.style.transition = 'width 0.5s ease-in-out';
-                foundBar.style.width = foundPercent + '%';
-                foundBar.style.background = '#4CAF50';
-            }
-            if (adoptionBar) {
-                adoptionBar.style.transition = 'width 0.5s ease-in-out';
-                adoptionBar.style.width = adoptionPercent + '%';
-                adoptionBar.style.background = '#2196F3';
-            }
-            
-            document.getElementById('lost-percent').textContent = lostPercent + '%';
-            document.getElementById('found-percent').textContent = foundPercent + '%';
-            document.getElementById('adoption-percent').textContent = adoptionPercent + '%';
+        const stats = await response.json();
+        console.log('Dashboard stats:', stats);
+        
+        // ===== TOP STATS =====
+        const totalUsers = stats.totalUsers || 0;
+        const totalPosts = stats.totalPosts || 0;
+        
+        document.getElementById('total-users').textContent = totalUsers;
+        document.getElementById('total-posts').textContent = totalPosts;
+        
+        // ===== POSTS BY STATUS =====
+        const lostCount = stats.lostPets || 0;
+        const foundCount = stats.foundPets || 0;
+        const adoptionCount = stats.adoptions || 0;
+        
+        document.getElementById('lost-pets').textContent = lostCount;
+        document.getElementById('found-pets').textContent = foundCount;
+        document.getElementById('adoption-pets').textContent = adoptionCount;
+        
+        // Set percentage changes (mock data - you can replace with real API data)
+        document.getElementById('lost-change').innerHTML = '↑ 1.56%';
+        document.getElementById('found-change').innerHTML = '↑ 1.56%';
+        document.getElementById('adoption-change').innerHTML = '↑ 1.56%';
+        
+        // ===== USER GROWTH LINE CHART =====
+        const userGrowth = stats.userGrowth || [12, 19, 15, 17, 24, 23, 25, 28, 32, 35, 38, 42];
+        
+        // Update the line chart
+        if (typeof updateLineChart === 'function') {
+            updateLineChart(userGrowth);
         }
         
-        if (stats.userGrowth && stats.userGrowth.length > 0) {
-            const bars = document.querySelectorAll('.growth-bar');
-            const maxHeight = 180;
-            const maxCount = Math.max(...stats.userGrowth, 1);
-            
-            bars.forEach((bar, index) => {
-                if (index < stats.userGrowth.length) {
-                    const height = (stats.userGrowth[index] / maxCount) * maxHeight;
-                    setTimeout(() => {
-                        bar.style.transition = 'height 0.5s ease-in-out';
-                        bar.style.height = height + 'px';
-                    }, index * 100);
-                }
-            });
-        }
+        // ===== GROWTH STATS =====
+        document.getElementById('total-users-growth').textContent = totalUsers;
         
+        // New this month (last month's growth)
+        const lastMonthGrowth = userGrowth.length > 0 ? userGrowth[userGrowth.length - 1] : Math.floor(totalUsers * 0.1);
+        document.getElementById('new-this-month').textContent = lastMonthGrowth;
+        
+        // Active users (80% of total as mock)
+        const activeUsers = Math.floor(totalUsers * 0.8);
+        document.getElementById('active-users').textContent = activeUsers;
+        
+        // Change percentages
+        document.getElementById('total-users-change').textContent = '+12%';
+        document.getElementById('new-month-change').textContent = '+8%';
+        document.getElementById('active-change').textContent = '+5%';
+        
+        // ===== RECENT ACTIVITY =====
         const activityContainer = document.getElementById('activity-container');
         if (activityContainer) {
             if (!stats.recentActivity || stats.recentActivity.length === 0) {
@@ -152,7 +148,15 @@ async function loadDashboardData() {
             }
         }
         
-        animateNumbers();
+        // Animate all numbers
+        animateNumber(document.getElementById('total-users'), totalUsers);
+        animateNumber(document.getElementById('total-posts'), totalPosts);
+        animateNumber(document.getElementById('lost-pets'), lostCount);
+        animateNumber(document.getElementById('found-pets'), foundCount);
+        animateNumber(document.getElementById('adoption-pets'), adoptionCount);
+        animateNumber(document.getElementById('total-users-growth'), totalUsers);
+        animateNumber(document.getElementById('new-this-month'), lastMonthGrowth);
+        animateNumber(document.getElementById('active-users'), activeUsers);
         
     } catch (error) {
         console.error('Failed to load dashboard:', error);
@@ -372,6 +376,251 @@ async function loadPostsData() {
     }
 }
 
+// In your ADMIN BACKEND (port 3000) - routes/admin.js
+const axios = require('axios');
+
+// Add this route
+router.get('/settings', async (req, res) => {
+  try {
+    // Forward request to APP BACKEND
+    const response = await axios.get('http://localhost:5000/api/admin/settings', {
+      headers: {
+        'Authorization': req.headers.authorization
+      }
+    });
+    res.json(response.data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
+
+
+// ===== SETTINGS API FUNCTIONS =====
+// Add these to your existing admin.js file
+
+// Load all settings
+async function loadSettingsData() {
+  try {
+    const token = localStorage.getItem('adminToken');
+    const response = await fetch(`${API_BASE_URL}/admin/settings`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    
+    if (!response.ok) throw new Error('Failed to load settings');
+    
+    const settings = await response.json();
+    console.log('✅ Settings loaded:', settings);
+    
+    // Update all form fields
+    updateSettingsForm(settings);
+    
+  } catch (error) {
+    console.error('❌ Failed to load settings:', error);
+  }
+}
+
+// Update form fields with settings
+function updateSettingsForm(settings) {
+  // General Settings
+  if (settings.general) {
+    setValue('appName', settings.general.appName);
+    setValue('supportEmail', settings.general.supportEmail);
+    setValue('minVersion', settings.general.minVersion);
+    setValue('maintenanceMessage', settings.general.maintenanceMessage);
+    
+    setToggle('maintenanceMode', settings.general.maintenanceMode);
+    setToggle('allowRegistration', settings.general.allowRegistration);
+    setToggle('emailVerification', settings.general.emailVerification);
+    setToggle('phoneVerification', settings.general.phoneVerification);
+  }
+  
+  // Security Settings
+  if (settings.security) {
+    setValue('maxLoginAttempts', settings.security.maxLoginAttempts);
+    setValue('lockoutDuration', settings.security.lockoutDuration);
+    setValue('sessionTimeout', settings.security.sessionTimeout);
+    setToggle('admin2FA', settings.security.admin2FA);
+  }
+  
+  // Notification Settings
+  if (settings.notifications) {
+    setToggle('pushEnabled', settings.notifications.pushEnabled);
+    setValue('quietStart', settings.notifications.quietStart);
+    setValue('quietEnd', settings.notifications.quietEnd);
+    
+    // Update notification types select
+    const select = document.getElementById('notificationTypes');
+    if (select && settings.notifications.notificationTypes) {
+      Array.from(select.options).forEach(option => {
+        option.selected = settings.notifications.notificationTypes.includes(option.value);
+      });
+    }
+  }
+  
+  // Moderation Settings
+  if (settings.moderation) {
+    setValue('flagThreshold', settings.moderation.flagThreshold);
+    setToggle('autoApprove', settings.moderation.autoApprove);
+    setToggle('profanityFilter', settings.moderation.profanityFilter);
+    
+    if (settings.moderation.blockedWords) {
+      setValue('blockedWords', settings.moderation.blockedWords.join(', '));
+    }
+  }
+  
+  // API Settings
+  if (settings.api) {
+    setValue('rateLimit', settings.api.rateLimit);
+    setToggle('apiStatus', settings.api.apiStatus);
+    
+    if (settings.api.allowedOrigins) {
+      setValue('allowedOrigins', settings.api.allowedOrigins.join(', '));
+    }
+  }
+}
+
+// Helper functions
+function setValue(id, value) {
+  const el = document.getElementById(id);
+  if (el && value !== undefined) el.value = value;
+}
+
+function setToggle(id, value) {
+  const el = document.getElementById(id);
+  if (el) {
+    if (value) {
+      el.classList.add('active');
+    } else {
+      el.classList.remove('active');
+    }
+  }
+}
+
+// ===== FIXED SAVE SETTINGS FUNCTION =====
+async function saveSettings(section) {
+  try {
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+      window.location.href = 'index.html';
+      return;
+    }
+    
+    // Collect settings based on section
+    let settings = {};
+    
+    switch(section) {
+      case 'general':
+        settings = {
+          appName: document.getElementById('appName')?.value,
+          supportEmail: document.getElementById('supportEmail')?.value,
+          minVersion: document.getElementById('minVersion')?.value,
+          maintenanceMode: document.getElementById('maintenanceMode')?.classList.contains('active'),
+          maintenanceMessage: document.getElementById('maintenanceMessage')?.value,
+          allowRegistration: document.getElementById('allowRegistration')?.classList.contains('active'),
+          emailVerification: document.getElementById('emailVerification')?.classList.contains('active'),
+          phoneVerification: document.getElementById('phoneVerification')?.classList.contains('active')
+        };
+        break;
+      // ... other cases
+    }
+    
+    console.log(`📤 Saving ${section} settings:`, settings);
+    
+    const response = await fetch(`${API_BASE_URL}/admin/settings/${section}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(settings)
+    });
+    
+    if (response.ok) {
+      const result = await response.json();
+      console.log('✅ Save successful:', result);
+      showToast(`${section} settings saved!`, 'success');
+      
+      // 🔥 IMPORTANT: Reload settings to confirm they were saved
+      setTimeout(() => loadSettingsData(), 1000);
+    } else {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to save');
+    }
+  } catch (error) {
+    console.error('❌ Error saving settings:', error);
+    showToast('Error saving settings: ' + error.message, 'error');
+  }
+}
+
+// Emergency actions
+async function emergencyAction(action) {
+  const confirmMessages = {
+    'disable': '⚠️ Disable all posts? Users will not see any posts.',
+    'clear': '🗑️ Clear all notifications for all users?',
+    'cache': '🧹 Clear app cache?',
+    'backup': '💾 Force database backup now?',
+    'reset': '🔥🔥🔥 DESTROY ALL DATA? Type "RESET" to confirm:'
+  };
+  
+  if (action === 'reset') {
+    const confirmText = prompt(confirmMessages[action]);
+    if (confirmText !== 'RESET') return;
+  } else {
+    if (!confirm(confirmMessages[action])) return;
+  }
+  
+  try {
+    const token = localStorage.getItem('adminToken');
+    const response = await fetch(`${API_BASE_URL}/admin/settings/emergency/${action}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ confirm: action === 'reset' ? 'RESET' : undefined })
+    });
+    
+    if (response.ok) {
+      alert(`✅ Emergency action completed`);
+    } else {
+      alert('❌ Action failed');
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    alert('❌ Error');
+  }
+}
+
+// Get notification count for badge
+async function getNotificationCount() {
+  try {
+    const token = localStorage.getItem('adminToken');
+    const response = await fetch(`${API_BASE_URL}/admin/notifications/count`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      const badge = document.getElementById('notificationBadge');
+      if (badge) {
+        badge.textContent = data.count;
+        badge.style.display = data.count > 0 ? 'flex' : 'none';
+      }
+    }
+  } catch (error) {
+    console.error('Failed to get notification count:', error);
+  }
+}
+
+// Start polling for notifications
+function startNotificationPolling() {
+  getNotificationCount();
+  setInterval(getNotificationCount, 30000); // Every 30 seconds
+}
+
+// ===== UPDATED POSTS DISPLAY FUNCTION WITH GENDER AND WEIGHT =====
 function displayPosts(posts) {
     const postsGrid = document.getElementById('postsGrid');
     if (!postsGrid) return;
@@ -390,61 +639,71 @@ function displayPosts(posts) {
         const statusClass = post.status === 'Lost' ? 'status-lost' : 
                            post.status === 'Found' ? 'status-found' : 'status-adoption';
         
-        // ===== FIXED: IMAGE LOADING SECTION =====
+        // ===== GENDER DISPLAY WITH EMOJI =====
+        let genderDisplay = '';
+        let genderEmoji = '';
+        
+        switch(post.gender?.toLowerCase()) {
+            case 'male':
+                genderEmoji = '♂️';
+                genderDisplay = 'Male';
+                break;
+            case 'female':
+                genderEmoji = '♀️';
+                genderDisplay = 'Female';
+                break;
+            default:
+                genderEmoji = '⚥';
+                genderDisplay = 'Unknown';
+        }
+        
+        // ===== WEIGHT DISPLAY =====
+        let weightDisplay = post.weight ? post.weight : 'Not specified';
+        if (weightDisplay !== 'Not specified' && !weightDisplay.includes('kg') && !weightDisplay.includes('lb')) {
+            weightDisplay = weightDisplay + ' kg'; // Add default unit if missing
+        }
+        
+        // ===== AGE DISPLAY =====
+        let ageDisplay = post.age ? post.age : 'Not specified';
+        
+        // ===== IMAGE HANDLING =====
         let imageHtml = '';
         if (post.imageUrls && post.imageUrls.length > 0) {
             let imageUrl = post.imageUrls[0];
             
-            console.log('Original image URL from DB:', imageUrl);
-            
             // Extract just the filename from the path
             const filename = imageUrl.split('/').pop();
             
-            // Construct the correct URL based on your backend configuration
-            // Your app backend serves images at: http://192.168.254.105:5000/api/uploads/posts/filename.jpg
+            // Construct the correct URL
             let fullImageUrl = '';
             
             if (imageUrl.startsWith('http')) {
-                // If it's already a full URL, use it as is
                 fullImageUrl = imageUrl;
             } else if (imageUrl.startsWith('/api/uploads')) {
-                // If it starts with /api/uploads, add the backend URL
                 fullImageUrl = `${APP_BACKEND_URL}${imageUrl}`;
             } else if (imageUrl.startsWith('/uploads')) {
-                // If it starts with /uploads, add /api to match your backend
                 fullImageUrl = `${APP_BACKEND_URL}/api${imageUrl}`;
-            } else if (imageUrl.includes('/uploads/')) {
-                // If it contains /uploads/ but no leading slash, add backend URL and ensure /api
-                fullImageUrl = `${APP_BACKEND_URL}/api/${imageUrl}`;
             } else {
-                // Just a filename - assume it's in uploads/posts
                 fullImageUrl = `${APP_BACKEND_URL}/api/uploads/posts/${filename}`;
             }
             
             // Remove any double slashes except after http:
             fullImageUrl = fullImageUrl.replace(/([^:]\/)\/+/g, '$1');
             
-            console.log('Final image URL:', fullImageUrl);
-            
             imageHtml = `<img src="${fullImageUrl}" 
                             style="width: 100%; height: 100%; object-fit: cover;" 
-                            onerror="console.log('❌ Failed to load: ' + this.src); this.style.display='none'; this.parentNode.innerHTML='${post.petName?.charAt(0) || '?'}';"
+                            onerror="this.style.display='none'; this.parentNode.innerHTML='${post.petName?.charAt(0) || '?'}';"
                             onload="console.log('✅ Loaded: ' + this.src);">`;
         } else {
-            // No images - show placeholder with first letter
-            imageHtml = post.petName?.charAt(0) || '?';
+            imageHtml = `<div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #7A4F2B; color: white; font-size: 48px;">${post.petName?.charAt(0) || '?'}</div>`;
         }
-        // ===== END FIXED SECTION =====
         
+        // Reported badge if any
         const reportedBadge = post.reported ? 
             `<div class="reported-badge" style="margin-bottom: 10px; background: #FF9800; cursor: pointer;" 
                  onclick="showReportDetails('${post.postId}')">
                 <span>🚩</span> Reported (${post.reportCount || 0} flag${post.reportCount > 1 ? 's' : ''})
             </div>` : '';
-
-        // Get gender with icon
-        const genderIcon = post.gender === 'Male' ? '♂️' : post.gender === 'Female' ? '♀️' : '⚥';
-        const genderDisplay = post.gender || 'Unknown';
 
         return `
         <div class="post-card">
@@ -453,33 +712,53 @@ function displayPosts(posts) {
                 <span class="post-status-badge ${statusClass}">${post.status?.toUpperCase() || ''}</span>
             </div>
             <div class="post-content">
-                <div class="post-header" style="flex-direction: column; align-items: flex-start; gap: 4px;">
-                    <!-- USERNAME ON TOP -->
-                    <div class="post-user" style="margin-bottom: 2px;">
+                <div class="post-header">
+                    <div class="post-user">
                         <div class="post-user-avatar">${post.userAvatar || '?'}</div>
                         <span style="font-weight: bold; color: #7A4F2B;">${post.userName || 'Unknown'}</span>
                     </div>
-                    <!-- PET NAME BELOW USERNAME -->
-                    <span class="post-title" style="font-size: 20px; margin-top: 2px;">${post.petName || ''}</span>
+                    <span class="post-title">${post.petName || ''}</span>
                 </div>
+                
                 ${reportedBadge}
-                <div class="post-meta">
-                    <div class="meta-item">📍 ${post.location || ''}</div>
-                    <div class="meta-item">⏱️ ${post.time || ''}</div>
-                    <div class="meta-item">${genderIcon} ${genderDisplay}</div>
+                
+                <!-- ENHANCED META SECTION WITH GENDER, AGE, WEIGHT -->
+                <div class="post-meta" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 10px 0;">
+                    <div class="meta-item" style="display: flex; align-items: center; gap: 5px;">
+                        <span style="font-size: 16px;">📍</span>
+                        <span style="color: #666; font-size: 13px;">${post.location || 'No location'}</span>
+                    </div>
+                    <div class="meta-item" style="display: flex; align-items: center; gap: 5px;">
+                        <span style="font-size: 16px;">⏱️</span>
+                        <span style="color: #666; font-size: 13px;">${post.time || ''}</span>
+                    </div>
+                    <div class="meta-item" style="display: flex; align-items: center; gap: 5px;">
+                        <span style="font-size: 16px;">${genderEmoji}</span>
+                        <span style="color: #666; font-size: 13px; font-weight: bold; color: ${post.gender?.toLowerCase() === 'male' ? '#2196F3' : post.gender?.toLowerCase() === 'female' ? '#E91E63' : '#666'};">${genderDisplay}</span>
+                    </div>
+                    <div class="meta-item" style="display: flex; align-items: center; gap: 5px;">
+                        <span style="font-size: 16px;">⚖️</span>
+                        <span style="color: #666; font-size: 13px;">${weightDisplay}</span>
+                    </div>
+                    <div class="meta-item" style="display: flex; align-items: center; gap: 5px; grid-column: span 2;">
+                        <span style="font-size: 16px;">🎂</span>
+                        <span style="color: #666; font-size: 13px;">Age: ${ageDisplay}</span>
+                    </div>
                 </div>
+                
                 <div class="post-description">
                     ${post.description || ''}
                 </div>
+                
                 <div class="post-actions">
                     <button class="action-btn btn-view" onclick="viewPost('${post.id}')">
                         <span>👁️</span> View
                     </button>
                     ${post.reported ? 
                         `<button class="action-btn btn-flag" onclick="showReportDetails('${post.postId}')" style="background: #FF9800;">
-                            <span>🚩</span> View Reports (${post.reportCount})
+                            <span>🚩</span> Reports (${post.reportCount})
                         </button>` : 
-                        `<button class="action-btn btn-flag" onclick="flagPost('${post.id}')" style="background: #999; opacity: 0.5;" disabled>
+                        `<button class="action-btn btn-flag" style="background: #999; opacity: 0.5;" disabled>
                             <span>🚩</span> No Reports
                         </button>`
                     }
@@ -926,93 +1205,206 @@ function updatePostStats(posts) {
     if (reportedPosts) reportedPosts.textContent = posts.filter(p => p.reported).length;
 }
 
+// ===== UPDATED VIEW POST FUNCTION WITH AGE AND WEIGHT =====
 async function viewPost(id) {
     try {
-        const post = await apiRequest(`/admin/posts/${id}`);
+        console.log('🔍 Viewing post:', id);
+        
+        // Fetch single post from API
+        const response = await fetch(`${API_BASE_URL}/admin/posts/${id}`, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+            }
+        });
+        
+        if (!response.ok) throw new Error('Failed to load post');
+        
+        const post = await response.json();
+        console.log('📄 Post details:', post);
         
         const modalContent = document.getElementById('modalContent');
-        if (modalContent) {
-            let statusColor = '#F44336';
-            if (post.status === 'Found') statusColor = '#4CAF50';
-            else if (post.status === 'Adoption') statusColor = '#2196F3';
-
-            let imagesHtml = '';
-            if (post.imageUrls && post.imageUrls.length > 0) {
-                imagesHtml = `
-                    <div class="post-detail-item">
-                        <div class="detail-label">Images</div>
-                        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
-                            ${post.imageUrls.map(url => {
-                                // Extract filename and construct correct URL
-                                const filename = url.split('/').pop();
-                                let fullUrl = '';
-                                
-                                if (url.startsWith('http')) {
-                                    fullUrl = url;
-                                } else if (url.startsWith('/api/uploads')) {
-                                    fullUrl = APP_BACKEND_URL + url;
-                                } else if (url.startsWith('/uploads')) {
-                                    fullUrl = APP_BACKEND_URL + '/api' + url;
-                                } else {
-                                    fullUrl = APP_BACKEND_URL + '/api/uploads/posts/' + filename;
-                                }
-                                
-                                // Remove double slashes
-                                fullUrl = fullUrl.replace(/([^:]\/)\/+/g, '$1');
-                                
-                                return `<img src="${fullUrl}" style="width: 150px; height: 150px; object-fit: cover; border-radius: 5px; border: 1px solid #F0F0F0;" 
-                                         onerror="this.style.display='none';">`;
-                            }).join('')}
-                        </div>
-                    </div>
-                `;
+        if (!modalContent) return;
+        
+        // Determine status color
+        let statusColor = '#F44336'; // Lost (red)
+        if (post.status === 'Found') statusColor = '#4CAF50'; // Found (green)
+        else if (post.status === 'Adoption') statusColor = '#2196F3'; // Adoption (blue)
+        
+        // ===== GENDER DISPLAY WITH EMOJI =====
+        let genderDisplay = '';
+        let genderEmoji = '';
+        let genderColor = '#666';
+        
+        switch(post.gender?.toLowerCase()) {
+            case 'male':
+                genderEmoji = '♂️';
+                genderDisplay = 'Male';
+                genderColor = '#2196F3'; // Blue
+                break;
+            case 'female':
+                genderEmoji = '♀️';
+                genderDisplay = 'Female';
+                genderColor = '#E91E63'; // Pink
+                break;
+            default:
+                genderEmoji = '⚥';
+                genderDisplay = post.gender || 'Unknown';
+                genderColor = '#999'; // Gray
+        }
+        
+        // ===== WEIGHT DISPLAY =====
+        let weightDisplay = 'Not specified';
+        if (post.weight && post.weight.trim() !== '') {
+            weightDisplay = post.weight;
+            // Add kg if it's just a number
+            if (!weightDisplay.includes('kg') && !weightDisplay.includes('lb') && !weightDisplay.includes('lbs')) {
+                weightDisplay = weightDisplay + ' kg';
             }
-
-            // Get gender with icon
-            const genderIcon = post.gender === 'Male' ? '♂️' : post.gender === 'Female' ? '♀️' : '⚥';
-            const genderDisplay = post.gender || 'Unknown';
-
-            modalContent.innerHTML = `
+        }
+        
+        // ===== AGE DISPLAY =====
+        let ageDisplay = 'Not specified';
+        if (post.age && post.age.trim() !== '') {
+            ageDisplay = post.age;
+        }
+        
+        // ===== REWARD DISPLAY =====
+        let rewardDisplay = 'None';
+        if (post.reward && post.reward.trim() !== '' && post.reward !== '0') {
+            const formattedReward = formatReward(post.reward);
+            rewardDisplay = `₱${formattedReward}`;
+        }
+        
+        // ===== IMAGES DISPLAY =====
+        let imagesHtml = '';
+        if (post.imageUrls && post.imageUrls.length > 0) {
+            imagesHtml = `
                 <div class="post-detail-item">
-                    <div class="detail-label">Pet Name</div>
-                    <div class="detail-value">${post.petName || ''}</div>
+                    <div class="detail-label">📸 Images (${post.imageUrls.length})</div>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; max-height: 200px; overflow-x: auto; padding-bottom: 10px;">
+                        ${post.imageUrls.map((url, index) => {
+                            const filename = url.split('/').pop();
+                            let fullUrl = '';
+                            
+                            if (url.startsWith('http')) {
+                                fullUrl = url;
+                            } else if (url.startsWith('/api/uploads')) {
+                                fullUrl = APP_BACKEND_URL + url;
+                            } else if (url.startsWith('/uploads')) {
+                                fullUrl = APP_BACKEND_URL + '/api' + url;
+                            } else {
+                                fullUrl = APP_BACKEND_URL + '/api/uploads/posts/' + filename;
+                            }
+                            
+                            fullUrl = fullUrl.replace(/([^:]\/)\/+/g, '$1');
+                            
+                            return `<img src="${fullUrl}" 
+                                     style="height: 150px; width: auto; border-radius: 5px; border: 1px solid #F0F0F0; cursor: pointer;" 
+                                     onclick="window.open('${fullUrl}', '_blank')"
+                                     onerror="this.style.display='none';">`;
+                        }).join('')}
+                    </div>
                 </div>
-                <div class="post-detail-item">
-                    <div class="detail-label">Gender</div>
-                    <div class="detail-value">${genderIcon} ${genderDisplay}</div>
-                </div>
-                <div class="post-detail-item">
-                    <div class="detail-label">Status</div>
-                    <div class="detail-value" style="color: ${statusColor}; font-weight: bold;">${post.status || ''}</div>
-                </div>
-                <div class="post-detail-item">
-                    <div class="detail-label">Posted By</div>
-                    <div class="detail-value">${post.userName || ''}</div>
-                </div>
-                <div class="post-detail-item">
-                    <div class="detail-label">Location</div>
-                    <div class="detail-value">${post.location || ''}</div>
-                </div>
-                <div class="post-detail-item">
-                    <div class="detail-label">Posted</div>
-                    <div class="detail-value">${post.time || ''}</div>
-                </div>
-                <div class="post-detail-item">
-                    <div class="detail-label">Description</div>
-                    <div class="detail-value">${post.description || ''}</div>
-                </div>
-                <div class="post-detail-item">
-                    <div class="detail-label">Contact</div>
-                    <div class="detail-value">${post.contact || ''}</div>
-                </div>
-                ${imagesHtml}
             `;
         }
+
+        // Build the modal content
+        modalContent.innerHTML = `
+            <div style="font-family: Arial, sans-serif;">
+                <!-- Pet Name and Status -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid ${statusColor}; padding-bottom: 10px;">
+                    <h2 style="margin: 0; color: #333;">${post.petName || 'Unnamed'}</h2>
+                    <span style="background: ${statusColor}; color: white; padding: 5px 15px; border-radius: 20px; font-weight: bold;">${post.status || 'Unknown'}</span>
+                </div>
+                
+                <!-- BASIC INFO - 2 COLUMN GRID -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                    
+                    <div class="post-detail-item" style="margin: 0; padding: 10px; background: #f9f9f9; border-radius: 8px;">
+                        <div class="detail-label" style="color: #999; font-size: 11px; margin-bottom: 3px;">👤 POSTED BY</div>
+                        <div class="detail-value" style="font-weight: bold;">${post.userName || 'Unknown'}</div>
+                    </div>
+                    
+                    <div class="post-detail-item" style="margin: 0; padding: 10px; background: #f9f9f9; border-radius: 8px;">
+                        <div class="detail-label" style="color: #999; font-size: 11px; margin-bottom: 3px;">📅 POSTED</div>
+                        <div class="detail-value">${post.time || 'Unknown'}</div>
+                    </div>
+                    
+                    <div class="post-detail-item" style="margin: 0; padding: 10px; background: #f9f9f9; border-radius: 8px;">
+                        <div class="detail-label" style="color: #999; font-size: 11px; margin-bottom: 3px;">📍 LOCATION</div>
+                        <div class="detail-value">${post.location || 'Not specified'}</div>
+                    </div>
+                    
+                    <div class="post-detail-item" style="margin: 0; padding: 10px; background: #f9f9f9; border-radius: 8px;">
+                        <div class="detail-label" style="color: #999; font-size: 11px; margin-bottom: 3px;">📞 CONTACT</div>
+                        <div class="detail-value">${post.contact || 'Not specified'}</div>
+                    </div>
+                </div>
+                
+                <!-- PET DETAILS - 3 COLUMN GRID for Gender, Age, Weight -->
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
+                    
+                    <div class="post-detail-item" style="margin: 0; padding: 15px; background: #f0f0f0; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 32px; margin-bottom: 5px;">${genderEmoji}</div>
+                        <div class="detail-label" style="color: #999; font-size: 11px;">GENDER</div>
+                        <div class="detail-value" style="font-weight: bold; color: ${genderColor};">${genderDisplay}</div>
+                    </div>
+                    
+                    <div class="post-detail-item" style="margin: 0; padding: 15px; background: #f0f0f0; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 32px; margin-bottom: 5px;">🎂</div>
+                        <div class="detail-label" style="color: #999; font-size: 11px;">AGE</div>
+                        <div class="detail-value" style="font-weight: bold;">${ageDisplay}</div>
+                    </div>
+                    
+                    <div class="post-detail-item" style="margin: 0; padding: 15px; background: #f0f0f0; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 32px; margin-bottom: 5px;">⚖️</div>
+                        <div class="detail-label" style="color: #999; font-size: 11px;">WEIGHT</div>
+                        <div class="detail-value" style="font-weight: bold;">${weightDisplay}</div>
+                    </div>
+                </div>
+                
+                <!-- REWARD (if Lost) -->
+                ${post.status === 'Lost' && rewardDisplay !== 'None' ? `
+                <div class="post-detail-item" style="margin-bottom: 20px; padding: 15px; background: #FFF3E0; border-radius: 8px; border-left: 5px solid #FF9800;">
+                    <div class="detail-label" style="color: #FF9800; font-size: 12px;">💰 REWARD</div>
+                    <div class="detail-value" style="font-size: 20px; font-weight: bold; color: #FF9800;">${rewardDisplay}</div>
+                </div>
+                ` : ''}
+                
+                <!-- DESCRIPTION -->
+                <div class="post-detail-item" style="margin-bottom: 20px;">
+                    <div class="detail-label" style="color: #999; font-size: 12px; margin-bottom: 5px;">📝 DESCRIPTION</div>
+                    <div class="detail-value" style="background: #f9f9f9; padding: 15px; border-radius: 8px; line-height: 1.6;">${post.description || 'No description'}</div>
+                </div>
+                
+                ${imagesHtml}
+                
+                <!-- POST ID (for reference) -->
+                <div style="margin-top: 20px; font-size: 10px; color: #ccc; text-align: right;">
+                    Post ID: ${post.postId || post.id}
+                </div>
+            </div>
+        `;
+        
         openModal('viewPostModal');
+        
     } catch (error) {
-        console.error('Failed to load post:', error);
-        alert('Failed to load post details');
+        console.error('❌ Failed to load post:', error);
+        alert('Failed to load post details: ' + error.message);
     }
+}
+
+// Helper function to format reward
+function formatReward(reward) {
+    if (!reward) return '0';
+    // Remove non-numeric characters
+    const digitsOnly = reward.replace(/[^0-9]/g, '');
+    if (!digitsOnly) return reward;
+    
+    const number = parseInt(digitsOnly);
+    if (number > 1000000) return '1,000,000+';
+    
+    return number.toLocaleString();
 }
 
 async function flagPost(id) {
@@ -1144,38 +1536,87 @@ function updateReportTable(data) {
     `).join('');
 }
 
-// ===== SETTINGS FUNCTIONS =====
+// ===== FIXED SETTINGS LOAD FUNCTION =====
 async function loadSettingsData() {
-    try {
-        const settings = await apiRequest('/admin/settings');
-        
-        const siteName = document.getElementById('siteName');
-        if (siteName) siteName.value = settings.siteName;
-        
-        const siteDesc = document.getElementById('siteDescription');
-        if (siteDesc) siteDesc.value = settings.siteDescription;
-        
-        const contactEmail = document.getElementById('contactEmail');
-        if (contactEmail) contactEmail.value = settings.contactEmail;
-        
-        const timezone = document.getElementById('timezone');
-        if (timezone) timezone.value = settings.timezone;
-        
-        const defaultRole = document.getElementById('defaultRole');
-        if (defaultRole) defaultRole.value = settings.defaultRole;
-        
-        const sessionTimeout = document.getElementById('sessionTimeout');
-        if (sessionTimeout) sessionTimeout.value = settings.sessionTimeout;
-        
-        updateToggle('allowRegistration', settings.allowRegistration);
-        updateToggle('emailVerification', settings.emailVerification);
-        updateToggle('twoFactorAuth', settings.twoFactorAuth);
-        updateToggle('autoApprovePosts', settings.autoApprovePosts);
-        updateToggle('profanityFilter', settings.profanityFilter);
-        
-    } catch (error) {
-        console.error('Failed to load settings:', error);
+  try {
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+      console.log('No token found, redirecting to login');
+      window.location.href = 'index.html';
+      return;
     }
+
+    console.log('📥 Loading settings from API...');
+    
+    const response = await fetch(`${API_BASE_URL}/admin/settings`, {
+      method: 'GET',
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      if (response.status === 401) {
+        localStorage.removeItem('adminToken');
+        window.location.href = 'index.html';
+        return;
+      }
+      throw new Error('Failed to load settings');
+    }
+    
+    const settings = await response.json();
+    console.log('✅ Settings loaded:', settings);
+    
+    // Update all form fields with settings data
+    updateSettingsForm(settings);
+    
+    // Show success message
+    showToast('Settings loaded successfully', 'success');
+    
+  } catch (error) {
+    console.error('❌ Failed to load settings:', error);
+    showToast('Failed to load settings', 'error');
+  }
+}
+
+// ===== TOAST NOTIFICATION HELPER =====
+function showToast(message, type = 'success') {
+  // Check if toast container exists, if not create it
+  let toastContainer = document.getElementById('toast-container');
+  if (!toastContainer) {
+    toastContainer = document.createElement('div');
+    toastContainer.id = 'toast-container';
+    toastContainer.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 9999;
+    `;
+    document.body.appendChild(toastContainer);
+  }
+  
+  // Create toast
+  const toast = document.createElement('div');
+  toast.style.cssText = `
+    background: ${type === 'success' ? '#4CAF50' : '#f44336'};
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    animation: slideIn 0.3s ease;
+    font-weight: 500;
+  `;
+  toast.textContent = message;
+  
+  toastContainer.appendChild(toast);
+  
+  // Remove after 3 seconds
+  setTimeout(() => {
+    toast.style.animation = 'slideOut 0.3s ease';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
 }
 
 function updateToggle(id, value) {
