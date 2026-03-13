@@ -20,7 +20,7 @@ router.post('/login', async (req, res) => {
     }
     
     // Check if user is admin
-    const isAdmin = email.includes('admin') || user.role === 'admin';
+    const isAdmin = user.role === 'admin';
     
     if (!isAdmin) {
       return res.status(403).json({ error: 'Admin access only' });

@@ -13,7 +13,7 @@ const adminRoutes = require('./routes/admin');
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+  origin: ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://192.168.254.100:3000'],
   credentials: true
 }));
 app.use(express.json());

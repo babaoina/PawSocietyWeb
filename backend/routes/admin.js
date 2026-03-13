@@ -5,18 +5,43 @@ const User = require('../models/User');
 const Post = require('../models/Post');
 const Report = require('../models/Report');
 const admin = require('firebase-admin');
+const fs = require('fs');
+const path = require('path');
 
-// Initialize Firebase Admin
+function openModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.add('active');
+    }
+}
+
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.remove('active');
+    }
+} 
+
+// Initialize Firebase Admin (with error handling)
+let firebaseInitialized = false;
 try {
-  if (!admin.apps.length) {
-    const serviceAccount = require('../firebase-service-account.json');
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount)
-    });
-    console.log('✅ Firebase Admin initialized for user management');
+  const serviceAccountPath = path.join(__dirname, '..', 'firebase-service-account.json');
+  
+  if (fs.existsSync(serviceAccountPath)) {
+    const serviceAccount = require(serviceAccountPath);
+    if (!admin.apps.length) {
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount)
+      });
+      firebaseInitialized = true;
+      console.log('✅ Firebase Admin initialized for user management');
+    }
+  } else {
+    console.warn('⚠️ Firebase service account not found. User suspension will not sync with Firebase.');
   }
 } catch (error) {
   console.error('❌ Firebase Admin initialization failed:', error.message);
+  console.warn('⚠️ Continuing without Firebase sync. User suspension will only affect MongoDB.');
 }
 
 // Middleware to verify admin token
@@ -170,16 +195,15 @@ router.put('/users/:id', async (req, res) => {
       { new: true }
     );
     
-    if (status && status !== currentUser.status) {
+    // Sync with Firebase if initialized and status changed
+    if (status && status !== currentUser.status && firebaseInitialized && currentUser.firebaseUid) {
       try {
-        if (admin.apps.length) {
-          if (status === 'Suspended') {
-            await admin.auth().updateUser(currentUser.firebaseUid, { disabled: true });
-            console.log(`🔒 User ${currentUser.email} disabled in Firebase`);
-          } else if (status === 'Active') {
-            await admin.auth().updateUser(currentUser.firebaseUid, { disabled: false });
-            console.log(`🔓 User ${currentUser.email} enabled in Firebase`);
-          }
+        if (status === 'Suspended') {
+          await admin.auth().updateUser(currentUser.firebaseUid, { disabled: true });
+          console.log(`🔒 User ${currentUser.email} disabled in Firebase`);
+        } else if (status === 'Active') {
+          await admin.auth().updateUser(currentUser.firebaseUid, { disabled: false });
+          console.log(`🔓 User ${currentUser.email} enabled in Firebase`);
         }
       } catch (firebaseError) {
         console.error('❌ Firebase update error:', firebaseError.message);
@@ -201,7 +225,7 @@ router.delete('/users/:id', async (req, res) => {
     }
     
     try {
-      if (admin.apps.length && user.firebaseUid) {
+      if (firebaseInitialized && user.firebaseUid) {
         await admin.auth().deleteUser(user.firebaseUid);
         console.log(`🔥 User ${user.email} deleted from Firebase`);
       }
@@ -220,6 +244,7 @@ router.delete('/users/:id', async (req, res) => {
 });
 
 // ===== POSTS =====
+// Around line 210-230, find this section:
 router.get('/posts', async (req, res) => {
   try {
     console.log('📥 Fetching all posts...');
@@ -232,6 +257,7 @@ router.get('/posts', async (req, res) => {
       id: post._id,
       postId: post.postId,
       petName: post.petName || 'Unnamed',
+      gender: post.gender || 'Unknown',  // ← ADD THIS LINE
       status: post.status || 'Unknown',
       userName: post.userName || 'Unknown',
       location: post.location || 'No location',
@@ -296,7 +322,7 @@ router.get('/reports', async (req, res) => {
         }
         
         const reporter = await User.findOne({ firebaseUid: report.reporterUid })
-          .select('username email')
+          .select('username email firebaseUid')
           .lean();
         
         let reportedUser = null;
@@ -335,14 +361,181 @@ router.put('/reports/:reportId/status', async (req, res) => {
       { reportId: req.params.reportId },
       { status: status },
       { new: true }
-    );
+    ).lean();
     
     if (!report) {
       return res.status(404).json({ error: 'Report not found' });
     }
     
     console.log(`✅ Report ${report.reportId} marked as ${status}`);
+    
+    // ===== SEND NOTIFICATION TO REPORTER =====
+    try {
+      // Get reporter details
+      const reporter = await User.findOne({ firebaseUid: report.reporterUid })
+        .select('username email firebaseUid')
+        .lean();
+      
+      if (reporter) {
+        // Get post details if it's a post report
+        let postDetails = '';
+        if (report.postId) {
+          const post = await Post.findOne({ postId: report.postId }).lean();
+          postDetails = post ? ` about "${post.petName}"` : '';
+        }
+        
+        // Prepare notification message
+        let message = '';
+        if (status === 'reviewed') {
+          message = `✅ Your report${postDetails} has been reviewed. Thank you for helping keep PawSociety safe!`;
+        } else if (status === 'dismissed') {
+          message = `ℹ️ Your report${postDetails} has been reviewed and dismissed. Thank you for your feedback.`;
+        }
+        
+        // Create notification in the MAIN APP DATABASE (not admin DB)
+        // You need to connect to the main app's MongoDB or use its API
+        const mongoose = require('mongoose');
+        const mainDB = mongoose.connection; // This should be your main app DB
+        
+        const Notification = require('../../backend/models/Notification'); // Path to your app's Notification model
+        
+        const notification = new Notification({
+          notificationId: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`,
+          userId: reporter.firebaseUid,
+          fromUserId: 'system',
+          fromUserName: 'PawSociety Admin',
+          fromUserImage: '',
+          type: 'report_update',
+          postId: report.postId || '',
+          message: message,
+          isRead: false,
+          createdAt: new Date()
+        });
+        
+        await notification.save();
+        console.log(`🔔 Notification sent to ${reporter.username}: ${message}`);
+        
+        // Emit socket event for real-time update (if socket is connected)
+        try {
+          const io = req.app.get('io');
+          if (io) {
+            io.to(reporter.firebaseUid).emit('new-notification', {
+              notificationId: notification.notificationId,
+              message: message,
+              type: 'report_update'
+            });
+          }
+        } catch (socketError) {
+          console.error('Socket emit error:', socketError.message);
+        }
+      }
+    } catch (notifError) {
+      console.error('Failed to send notification:', notifError.message);
+    }
+    
     res.json({ success: true, report });
+    
+  } catch (error) {
+    console.error('❌ Update report status error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.delete('/reports/:reportId', async (req, res) => {
+  try {
+    const report = await Report.findOneAndDelete({
+      reportId: req.params.reportId
+    });
+    
+    if (!report) {
+      return res.status(404).json({ error: 'Report not found' });
+    }
+    
+    console.log(`✅ Report ${report.reportId} deleted`);
+    res.json({ success: true, message: 'Report deleted' });
+  } catch (error) {
+    console.error('❌ Delete report error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Around line 300-350, find this function and replace it
+router.put('/reports/:reportId/status', async (req, res) => {
+  try {
+    const { status } = req.body;
+    
+    if (!['reviewed', 'dismissed'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid status' });
+    }
+    
+    const report = await Report.findOneAndUpdate(
+      { reportId: req.params.reportId },
+      { status: status },
+      { new: true }
+    ).lean();
+    
+    if (!report) {
+      return res.status(404).json({ error: 'Report not found' });
+    }
+    
+    console.log(`✅ Report ${report.reportId} marked as ${status}`);
+    
+    // Get reporter details to send notification
+    const reporter = await User.findOne({ firebaseUid: report.reporterUid })
+      .select('username email fcmToken')
+      .lean();
+    
+    // Get post details if it's a post report
+    let post = null;
+    if (report.postId) {
+      post = await Post.findOne({ postId: report.postId })
+        .select('petName')
+        .lean();
+    }
+    
+    // Prepare notification data
+    const notificationData = {
+      reportId: report.reportId,
+      status: status,
+      reason: report.reason,
+      postId: report.postId,
+      postName: post?.petName || 'a post',
+      commentId: report.commentId,
+      timestamp: new Date().toISOString()
+    };
+    
+    // Send notification to reporter if they exist
+    if (reporter) {
+      // Create notification in database (you'll need a Notification model)
+      try {
+        const Notification = require('../models/Notification');
+        const { v4: uuidv4 } = require('uuid');
+        
+        const notification = new Notification({
+          notificationId: `notif_${Date.now()}_${uuidv4().substring(0, 8)}`,
+          userId: reporter.firebaseUid,
+          fromUserId: 'system',
+          fromUserName: 'PawSociety Admin',
+          type: 'report_update',
+          message: `Your report${post ? ' about ' + post.petName : ''} has been ${status}`,
+          data: notificationData
+        });
+        
+        await notification.save();
+        console.log(`🔔 Notification created for reporter: ${reporter.username}`);
+        
+        // If using Socket.IO, emit real-time update
+        const io = req.app.get('io');
+        if (io) {
+          io.to(reporter.firebaseUid).emit('report-updated', notificationData);
+        }
+      } catch (notifError) {
+        console.error('Failed to create notification:', notifError.message);
+      }
+    }
+    
+    res.json({ success: true, report });
+    
   } catch (error) {
     console.error('❌ Update report status error:', error);
     res.status(500).json({ error: error.message });

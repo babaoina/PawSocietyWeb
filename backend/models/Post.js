@@ -33,10 +33,6 @@ const postSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  commentsCount: {
-    type: Number,
-    default: 0
-  },
   reported: {
     type: Boolean,
     default: false

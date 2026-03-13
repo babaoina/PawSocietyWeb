@@ -1,6 +1,6 @@
 // ===== API CONFIGURATION =====
 const API_BASE_URL = 'http://localhost:3000/api';
-const APP_BACKEND_URL = 'http://192.168.254.105:5000';
+const APP_BACKEND_URL = 'http://192.168.254.100:5000';
 let authToken = localStorage.getItem('adminToken');
 
 // ===== API REQUEST HELPER =====
@@ -326,13 +326,23 @@ async function loadPostsData() {
         console.log('Loading posts...');
         const posts = await apiRequest('/admin/posts');
         
+        // DEBUG: Log all image URLs to see what's coming from backend
+        console.log('📸 IMAGE URLS FROM DATABASE:');
+        posts.forEach(post => {
+            if (post.imageUrls && post.imageUrls.length > 0) {
+                console.log(`Post ${post.postId} (${post.petName}):`, post.imageUrls);
+            }
+        });
+        
         let reports = [];
         try {
             reports = await apiRequest('/admin/reports');
+            console.log('Reports loaded:', reports.length);
         } catch (e) {
             console.log('No reports found');
         }
         
+        // Create a map of reports by postId
         const reportsMap = {};
         reports.forEach(report => {
             if (report.postId) {
@@ -343,6 +353,7 @@ async function loadPostsData() {
             }
         });
         
+        // Add report info to posts
         const postsWithReports = posts.map(post => {
             const postReports = reportsMap[post.postId] || [];
             return {
@@ -353,7 +364,7 @@ async function loadPostsData() {
             };
         });
         
-        console.log('Posts loaded:', postsWithReports);
+        console.log('Posts with reports:', postsWithReports.length);
         displayPosts(postsWithReports);
         updatePostStats(postsWithReports);
     } catch (error) {
@@ -379,25 +390,61 @@ function displayPosts(posts) {
         const statusClass = post.status === 'Lost' ? 'status-lost' : 
                            post.status === 'Found' ? 'status-found' : 'status-adoption';
         
+        // ===== FIXED: IMAGE LOADING SECTION =====
         let imageHtml = '';
         if (post.imageUrls && post.imageUrls.length > 0) {
             let imageUrl = post.imageUrls[0];
-            if (imageUrl.startsWith('/')) {
-                imageUrl = APP_BACKEND_URL + imageUrl;
-            } else if (!imageUrl.startsWith('http')) {
-                imageUrl = APP_BACKEND_URL + '/' + imageUrl;
+            
+            console.log('Original image URL from DB:', imageUrl);
+            
+            // Extract just the filename from the path
+            const filename = imageUrl.split('/').pop();
+            
+            // Construct the correct URL based on your backend configuration
+            // Your app backend serves images at: http://192.168.254.105:5000/api/uploads/posts/filename.jpg
+            let fullImageUrl = '';
+            
+            if (imageUrl.startsWith('http')) {
+                // If it's already a full URL, use it as is
+                fullImageUrl = imageUrl;
+            } else if (imageUrl.startsWith('/api/uploads')) {
+                // If it starts with /api/uploads, add the backend URL
+                fullImageUrl = `${APP_BACKEND_URL}${imageUrl}`;
+            } else if (imageUrl.startsWith('/uploads')) {
+                // If it starts with /uploads, add /api to match your backend
+                fullImageUrl = `${APP_BACKEND_URL}/api${imageUrl}`;
+            } else if (imageUrl.includes('/uploads/')) {
+                // If it contains /uploads/ but no leading slash, add backend URL and ensure /api
+                fullImageUrl = `${APP_BACKEND_URL}/api/${imageUrl}`;
+            } else {
+                // Just a filename - assume it's in uploads/posts
+                fullImageUrl = `${APP_BACKEND_URL}/api/uploads/posts/${filename}`;
             }
-            imageHtml = `<img src="${imageUrl}" style="width: 100%; height: 100%; object-fit: cover;" 
-                         onerror="this.style.display='none'; this.parentNode.innerHTML='${post.petName?.charAt(0) || '?'}';">`;
+            
+            // Remove any double slashes except after http:
+            fullImageUrl = fullImageUrl.replace(/([^:]\/)\/+/g, '$1');
+            
+            console.log('Final image URL:', fullImageUrl);
+            
+            imageHtml = `<img src="${fullImageUrl}" 
+                            style="width: 100%; height: 100%; object-fit: cover;" 
+                            onerror="console.log('❌ Failed to load: ' + this.src); this.style.display='none'; this.parentNode.innerHTML='${post.petName?.charAt(0) || '?'}';"
+                            onload="console.log('✅ Loaded: ' + this.src);">`;
         } else {
+            // No images - show placeholder with first letter
             imageHtml = post.petName?.charAt(0) || '?';
         }
+        // ===== END FIXED SECTION =====
         
         const reportedBadge = post.reported ? 
             `<div class="reported-badge" style="margin-bottom: 10px; background: #FF9800; cursor: pointer;" 
                  onclick="showReportDetails('${post.postId}')">
                 <span>🚩</span> Reported (${post.reportCount || 0} flag${post.reportCount > 1 ? 's' : ''})
             </div>` : '';
+
+        // Get gender with icon
+        const genderIcon = post.gender === 'Male' ? '♂️' : post.gender === 'Female' ? '♀️' : '⚥';
+        const genderDisplay = post.gender || 'Unknown';
 
         return `
         <div class="post-card">
@@ -406,17 +453,20 @@ function displayPosts(posts) {
                 <span class="post-status-badge ${statusClass}">${post.status?.toUpperCase() || ''}</span>
             </div>
             <div class="post-content">
-                <div class="post-header">
-                    <span class="post-title">${post.petName || ''}</span>
-                    <div class="post-user">
+                <div class="post-header" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+                    <!-- USERNAME ON TOP -->
+                    <div class="post-user" style="margin-bottom: 2px;">
                         <div class="post-user-avatar">${post.userAvatar || '?'}</div>
-                        <span>${post.userName || ''}</span>
+                        <span style="font-weight: bold; color: #7A4F2B;">${post.userName || 'Unknown'}</span>
                     </div>
+                    <!-- PET NAME BELOW USERNAME -->
+                    <span class="post-title" style="font-size: 20px; margin-top: 2px;">${post.petName || ''}</span>
                 </div>
                 ${reportedBadge}
                 <div class="post-meta">
                     <div class="meta-item">📍 ${post.location || ''}</div>
                     <div class="meta-item">⏱️ ${post.time || ''}</div>
+                    <div class="meta-item">${genderIcon} ${genderDisplay}</div>
                 </div>
                 <div class="post-description">
                     ${post.description || ''}
@@ -444,68 +494,411 @@ function displayPosts(posts) {
 
 async function showReportDetails(postId) {
     try {
+        console.log('🔍 Fetching reports for post:', postId);
+        
+        // Get all reports
         const reports = await apiRequest('/admin/reports');
-        const postReports = reports.filter(r => r.postId === postId);
+        
+        // Find reports for this post
+        const postReports = reports.filter(r => 
+            r.postId === postId || 
+            (r.post && r.post.postId === postId)
+        );
+        
+        console.log('🎯 Found reports:', postReports);
         
         if (postReports.length === 0) {
-            alert('No reports for this post');
+            alert('No reports found for this post');
             return;
         }
         
-        let reportHtml = '<div style="max-height: 400px; overflow-y: auto;">';
+        // Build HTML for the modal
+        let html = `
+            <div style="font-family: Arial, sans-serif; padding: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #FF9800; padding-bottom: 10px;">
+                    <h2 style="color: #FF9800; margin: 0;">
+                        <span style="font-size: 24px;">🚩</span> Reports (${postReports.length})
+                    </h2>
+                    <button onclick="closeModal('reportModal')" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #666;">&times;</button>
+                </div>
+        `;
+        
+        // Add each report with status buttons
         postReports.forEach((report, index) => {
-            reportHtml += `
-                <div style="padding: 15px; border-bottom: 1px solid #F0F0F0; background: ${index % 2 === 0 ? '#F9F9F9' : '#FFFFFF'};">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            const reporterName = report.reporter?.username || report.reporterUid || 'Unknown User';
+            const reporterEmail = report.reporter?.email || '';
+            const reportDate = report.createdAt ? new Date(report.createdAt).toLocaleString() : 'Unknown date';
+            const reportId = report.reportId;
+            
+            let statusColor = '#FF9800';
+            let statusText = 'PENDING';
+            
+            if (report.status === 'reviewed') {
+                statusColor = '#4CAF50';
+                statusText = 'REVIEWED';
+            }
+            if (report.status === 'dismissed') {
+                statusColor = '#999';
+                statusText = 'DISMISSED';
+            }
+            
+            html += `
+                <div style="background: ${index % 2 === 0 ? '#f9f9f9' : '#fff'}; 
+                            padding: 15px; 
+                            margin-bottom: 15px; 
+                            border-radius: 8px;
+                            border-left: 5px solid #FF9800;
+                            box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
                         <span style="font-weight: bold; color: #FF9800;">Report #${index + 1}</span>
-                        <span style="color: #999; font-size: 12px;">${new Date(report.createdAt).toLocaleString()}</span>
+                        <span style="color: #666; font-size: 12px;">${reportDate}</span>
                     </div>
-                    <div style="margin-bottom: 5px;"><span style="font-weight: bold;">Reporter:</span> ${report.reporter?.username || 'Unknown'} (${report.reporter?.email || 'No email'})</div>
-                    <div style="margin-bottom: 5px;"><span style="font-weight: bold;">Reason:</span> ${report.reason || 'Not specified'}</div>
-                    ${report.description ? `<div style="margin-bottom: 5px;"><span style="font-weight: bold;">Description:</span> ${report.description}</div>` : ''}
-                    <div style="margin-bottom: 5px;"><span style="font-weight: bold;">Status:</span> 
-                        <span style="color: ${report.status === 'pending' ? '#FF9800' : report.status === 'reviewed' ? '#4CAF50' : '#999'}">
-                            ${report.status || 'pending'}
+                    
+                    <div style="margin-bottom: 10px;">
+                        <div style="font-weight: bold; color: #555; margin-bottom: 3px;">👤 Reporter</div>
+                        <div>${reporterName} ${reporterEmail ? '(' + reporterEmail + ')' : ''}</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 10px;">
+                        <div style="font-weight: bold; color: #555; margin-bottom: 3px;">📝 Reason</div>
+                        <div style="text-transform: capitalize;">${report.reason || 'Not specified'}</div>
+                    </div>
+                    
+                    ${report.description ? `
+                        <div style="margin-bottom: 10px;">
+                            <div style="font-weight: bold; color: #555; margin-bottom: 3px;">📄 Description</div>
+                            <div>${report.description}</div>
+                        </div>
+                    ` : ''}
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div style="font-weight: bold; color: #555; margin-bottom: 3px;">⚙️ Current Status</div>
+                        <span style="display: inline-block; background: ${statusColor}; color: white; padding: 3px 12px; border-radius: 12px; font-weight: bold; text-transform: uppercase; font-size: 11px;">
+                            ${statusText}
                         </span>
                     </div>
-                    <div style="margin-top: 10px; display: flex; gap: 10px;">
-                        <button onclick="updateReportStatus('${report.reportId}', 'reviewed')" style="background: #4CAF50; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">Mark Reviewed</button>
-                        <button onclick="updateReportStatus('${report.reportId}', 'dismissed')" style="background: #999; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">Dismiss</button>
-                        <button onclick="deleteReport('${report.reportId}')" style="background: #F44336; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">Delete Report</button>
-                    </div>
+                    
+                    ${report.status === 'pending' ? `
+                        <div style="display: flex; gap: 10px; margin-top: 10px;">
+                            <button onclick="updateReportStatus('${reportId}', 'reviewed')" 
+                                    style="flex: 1; background: #4CAF50; color: white; border: none; 
+                                           padding: 8px; border-radius: 5px; cursor: pointer; font-weight: bold;">
+                                ✅ Mark Reviewed
+                            </button>
+                            <button onclick="updateReportStatus('${reportId}', 'dismissed')" 
+                                    style="flex: 1; background: #999; color: white; border: none; 
+                                           padding: 8px; border-radius: 5px; cursor: pointer; font-weight: bold;">
+                                ❌ Dismiss
+                            </button>
+                        </div>
+                    ` : `
+                        <div style="margin-top: 10px; padding: 8px; background: #f0f0f0; border-radius: 5px; text-align: center; color: #666;">
+                            ✅ This report has been ${report.status}
+                        </div>
+                    `}
                 </div>
             `;
         });
-        reportHtml += '</div>';
         
-        const modalContent = `
-            <h3 style="color: #FF9800; margin-bottom: 20px;">🚩 Reports for Post</h3>
-            ${reportHtml}
-            <div style="margin-top: 20px; text-align: right;">
-                <button onclick="closeModal('reportModal')" style="background: #7A4F2B; color: white; border: none; padding: 8px 20px; border-radius: 5px; cursor: pointer;">Close</button>
+        html += `
+                <div style="text-align: right; margin-top: 20px;">
+                    <button onclick="closeModal('reportModal')" 
+                            style="background: #7A4F2B; color: white; border: none; 
+                                   padding: 10px 25px; border-radius: 5px; cursor: pointer; 
+                                   font-weight: bold;">
+                        Close
+                    </button>
+                </div>
             </div>
         `;
         
-        document.getElementById('modalContent').innerHTML = modalContent;
-        openModal('reportModal');
+        // Get the report modal content element
+        const reportModalContent = document.getElementById('reportModalContent');
+        
+        if (reportModalContent) {
+            reportModalContent.innerHTML = html;
+            openModal('reportModal');
+        } else {
+            console.error('reportModalContent element not found!');
+            alert('Error: Could not find report modal content element');
+        }
+        
     } catch (error) {
-        console.error('Failed to load reports:', error);
-        alert('Failed to load reports');
+        console.error('❌ Error:', error);
+        alert('Failed to load reports: ' + error.message);
     }
 }
 
 async function updateReportStatus(reportId, status) {
     try {
+        console.log('Updating report:', reportId, 'to', status);
+        
         await apiRequest(`/admin/reports/${reportId}/status`, {
             method: 'PUT',
             body: JSON.stringify({ status })
         });
-        alert(`Report marked as ${status}`);
-        showReportDetails(document.querySelector('#modalContent').getAttribute('data-postid'));
-        loadPostsData();
+        
+        alert(`✅ Report marked as ${status}. Reporter will be notified.`);
+        
+        // Get the current post ID from the modal
+        const postId = window.currentReportPostId;
+        
+        if (postId) {
+            // Refresh just the reports for this post
+            await refreshReportModal(postId);
+        } else {
+            // Refresh posts data
+            loadPostsData();
+            closeModal('reportModal');
+        }
+        
     } catch (error) {
         console.error('Failed to update report:', error);
-        alert('Failed to update report');
+        alert('Failed to update report: ' + error.message);
+    }
+}
+
+// Store post ID when opening modal
+async function showReportDetails(postId) {
+    window.currentReportPostId = postId; // Store for later use
+    
+    try {
+        console.log('🔍 Fetching reports for post:', postId);
+        
+        const reports = await apiRequest('/admin/reports');
+        const postReports = reports.filter(r => 
+            r.postId === postId || 
+            (r.post && r.post.postId === postId)
+        );
+        
+        if (postReports.length === 0) {
+            alert('No reports found for this post');
+            return;
+        }
+        
+        // Build HTML with status buttons
+        let html = `
+            <div style="font-family: Arial, sans-serif; padding: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #FF9800; padding-bottom: 10px;">
+                    <h2 style="color: #FF9800; margin: 0;">
+                        <span style="font-size: 24px;">🚩</span> Reports (${postReports.length})
+                    </h2>
+                    <button onclick="closeModal('reportModal')" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #666;">&times;</button>
+                </div>
+        `;
+        
+        postReports.forEach((report, index) => {
+            const reporterName = report.reporter?.username || report.reporterUid || 'Unknown User';
+            const reporterEmail = report.reporter?.email || '';
+            const reportDate = report.createdAt ? new Date(report.createdAt).toLocaleString() : 'Unknown date';
+            const reportId = report.reportId;
+            
+            let statusColor = '#FF9800';
+            let statusText = 'PENDING';
+            
+            if (report.status === 'reviewed') {
+                statusColor = '#4CAF50';
+                statusText = 'REVIEWED';
+            }
+            if (report.status === 'dismissed') {
+                statusColor = '#999';
+                statusText = 'DISMISSED';
+            }
+            
+            html += `
+                <div style="background: ${index % 2 === 0 ? '#f9f9f9' : '#fff'}; 
+                            padding: 15px; 
+                            margin-bottom: 15px; 
+                            border-radius: 8px;
+                            border-left: 5px solid #FF9800;
+                            box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                        <span style="font-weight: bold; color: #FF9800;">Report #${index + 1}</span>
+                        <span style="color: #666; font-size: 12px;">${reportDate}</span>
+                    </div>
+                    
+                    <div style="margin-bottom: 10px;">
+                        <div style="font-weight: bold; color: #555; margin-bottom: 3px;">👤 Reporter</div>
+                        <div>${reporterName} ${reporterEmail ? '(' + reporterEmail + ')' : ''}</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 10px;">
+                        <div style="font-weight: bold; color: #555; margin-bottom: 3px;">📝 Reason</div>
+                        <div style="text-transform: capitalize;">${report.reason || 'Not specified'}</div>
+                    </div>
+                    
+                    ${report.description ? `
+                        <div style="margin-bottom: 10px;">
+                            <div style="font-weight: bold; color: #555; margin-bottom: 3px;">📄 Description</div>
+                            <div>${report.description}</div>
+                        </div>
+                    ` : ''}
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div style="font-weight: bold; color: #555; margin-bottom: 3px;">⚙️ Current Status</div>
+                        <span style="display: inline-block; background: ${statusColor}; color: white; padding: 3px 12px; border-radius: 12px; font-weight: bold; text-transform: uppercase; font-size: 11px;">
+                            ${statusText}
+                        </span>
+                    </div>
+                    
+                    ${report.status === 'pending' ? `
+                        <div style="display: flex; gap: 10px; margin-top: 10px;">
+                            <button onclick="updateReportStatus('${reportId}', 'reviewed')" 
+                                    style="flex: 1; background: #4CAF50; color: white; border: none; 
+                                           padding: 8px; border-radius: 5px; cursor: pointer; font-weight: bold;">
+                                ✅ Mark Reviewed
+                            </button>
+                            <button onclick="updateReportStatus('${reportId}', 'dismissed')" 
+                                    style="flex: 1; background: #999; color: white; border: none; 
+                                           padding: 8px; border-radius: 5px; cursor: pointer; font-weight: bold;">
+                                ❌ Dismiss
+                            </button>
+                        </div>
+                    ` : `
+                        <div style="margin-top: 10px; padding: 8px; background: #f0f0f0; border-radius: 5px; text-align: center; color: #666;">
+                            ✅ This report has been ${report.status}
+                        </div>
+                    `}
+                </div>
+            `;
+        });
+        
+        html += `
+                <div style="text-align: right; margin-top: 20px;">
+                    <button onclick="closeModal('reportModal')" 
+                            style="background: #7A4F2B; color: white; border: none; 
+                                   padding: 10px 25px; border-radius: 5px; cursor: pointer; 
+                                   font-weight: bold;">
+                        Close
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('reportModalContent').innerHTML = html;
+        openModal('reportModal');
+        
+    } catch (error) {
+        console.error('❌ Error:', error);
+        alert('Failed to load reports: ' + error.message);
+    }
+}
+
+// Refresh modal function
+async function refreshReportModal(postId) {
+    try {
+        const reports = await apiRequest('/admin/reports');
+        const postReports = reports.filter(r => 
+            r.postId === postId || 
+            (r.post && r.post.postId === postId)
+        );
+        
+        // Rebuild the modal content (same as above)
+        let html = `
+            <div style="font-family: Arial, sans-serif; padding: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #FF9800; padding-bottom: 10px;">
+                    <h2 style="color: #FF9800; margin: 0;">
+                        <span style="font-size: 24px;">🚩</span> Reports (${postReports.length})
+                    </h2>
+                    <button onclick="closeModal('reportModal')" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #666;">&times;</button>
+                </div>
+        `;
+        
+        postReports.forEach((report, index) => {
+            const reporterName = report.reporter?.username || report.reporterUid || 'Unknown User';
+            const reporterEmail = report.reporter?.email || '';
+            const reportDate = report.createdAt ? new Date(report.createdAt).toLocaleString() : 'Unknown date';
+            const reportId = report.reportId;
+            
+            let statusColor = '#FF9800';
+            let statusText = 'PENDING';
+            
+            if (report.status === 'reviewed') {
+                statusColor = '#4CAF50';
+                statusText = 'REVIEWED';
+            }
+            if (report.status === 'dismissed') {
+                statusColor = '#999';
+                statusText = 'DISMISSED';
+            }
+            
+            html += `
+                <div style="background: ${index % 2 === 0 ? '#f9f9f9' : '#fff'}; 
+                            padding: 15px; 
+                            margin-bottom: 15px; 
+                            border-radius: 8px;
+                            border-left: 5px solid #FF9800;
+                            box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                        <span style="font-weight: bold; color: #FF9800;">Report #${index + 1}</span>
+                        <span style="color: #666; font-size: 12px;">${reportDate}</span>
+                    </div>
+                    
+                    <div style="margin-bottom: 10px;">
+                        <div style="font-weight: bold; color: #555; margin-bottom: 3px;">👤 Reporter</div>
+                        <div>${reporterName} ${reporterEmail ? '(' + reporterEmail + ')' : ''}</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 10px;">
+                        <div style="font-weight: bold; color: #555; margin-bottom: 3px;">📝 Reason</div>
+                        <div style="text-transform: capitalize;">${report.reason || 'Not specified'}</div>
+                    </div>
+                    
+                    ${report.description ? `
+                        <div style="margin-bottom: 10px;">
+                            <div style="font-weight: bold; color: #555; margin-bottom: 3px;">📄 Description</div>
+                            <div>${report.description}</div>
+                        </div>
+                    ` : ''}
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div style="font-weight: bold; color: #555; margin-bottom: 3px;">⚙️ Current Status</div>
+                        <span style="display: inline-block; background: ${statusColor}; color: white; padding: 3px 12px; border-radius: 12px; font-weight: bold; text-transform: uppercase; font-size: 11px;">
+                            ${statusText}
+                        </span>
+                    </div>
+                    
+                    ${report.status === 'pending' ? `
+                        <div style="display: flex; gap: 10px; margin-top: 10px;">
+                            <button onclick="updateReportStatus('${reportId}', 'reviewed')" 
+                                    style="flex: 1; background: #4CAF50; color: white; border: none; 
+                                           padding: 8px; border-radius: 5px; cursor: pointer; font-weight: bold;">
+                                ✅ Mark Reviewed
+                            </button>
+                            <button onclick="updateReportStatus('${reportId}', 'dismissed')" 
+                                    style="flex: 1; background: #999; color: white; border: none; 
+                                           padding: 8px; border-radius: 5px; cursor: pointer; font-weight: bold;">
+                                ❌ Dismiss
+                            </button>
+                        </div>
+                    ` : `
+                        <div style="margin-top: 10px; padding: 8px; background: #f0f0f0; border-radius: 5px; text-align: center; color: #666;">
+                            ✅ This report has been ${report.status}
+                        </div>
+                    `}
+                </div>
+            `;
+        });
+        
+        html += `
+                <div style="text-align: right; margin-top: 20px;">
+                    <button onclick="closeModal('reportModal')" 
+                            style="background: #7A4F2B; color: white; border: none; 
+                                   padding: 10px 25px; border-radius: 5px; cursor: pointer; 
+                                   font-weight: bold;">
+                        Close
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('reportModalContent').innerHTML = html;
+        
+    } catch (error) {
+        console.error('Failed to refresh reports:', error);
     }
 }
 
@@ -550,12 +943,23 @@ async function viewPost(id) {
                         <div class="detail-label">Images</div>
                         <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
                             ${post.imageUrls.map(url => {
-                                let fullUrl = url;
-                                if (url.startsWith('/')) {
+                                // Extract filename and construct correct URL
+                                const filename = url.split('/').pop();
+                                let fullUrl = '';
+                                
+                                if (url.startsWith('http')) {
+                                    fullUrl = url;
+                                } else if (url.startsWith('/api/uploads')) {
                                     fullUrl = APP_BACKEND_URL + url;
-                                } else if (!url.startsWith('http')) {
-                                    fullUrl = APP_BACKEND_URL + '/' + url;
+                                } else if (url.startsWith('/uploads')) {
+                                    fullUrl = APP_BACKEND_URL + '/api' + url;
+                                } else {
+                                    fullUrl = APP_BACKEND_URL + '/api/uploads/posts/' + filename;
                                 }
+                                
+                                // Remove double slashes
+                                fullUrl = fullUrl.replace(/([^:]\/)\/+/g, '$1');
+                                
                                 return `<img src="${fullUrl}" style="width: 150px; height: 150px; object-fit: cover; border-radius: 5px; border: 1px solid #F0F0F0;" 
                                          onerror="this.style.display='none';">`;
                             }).join('')}
@@ -564,10 +968,18 @@ async function viewPost(id) {
                 `;
             }
 
+            // Get gender with icon
+            const genderIcon = post.gender === 'Male' ? '♂️' : post.gender === 'Female' ? '♀️' : '⚥';
+            const genderDisplay = post.gender || 'Unknown';
+
             modalContent.innerHTML = `
                 <div class="post-detail-item">
                     <div class="detail-label">Pet Name</div>
                     <div class="detail-value">${post.petName || ''}</div>
+                </div>
+                <div class="post-detail-item">
+                    <div class="detail-label">Gender</div>
+                    <div class="detail-value">${genderIcon} ${genderDisplay}</div>
                 </div>
                 <div class="post-detail-item">
                     <div class="detail-label">Status</div>
@@ -692,8 +1104,12 @@ async function loadReportsData() {
         const startDate = document.getElementById('startDate')?.value || '2024-01-01';
         const endDate = document.getElementById('endDate')?.value || today.toISOString().split('T')[0];
         
-        const summary = await apiRequest(`/admin/reports/summary?start=${startDate}&end=${endDate}`);
-        updateReportTable(summary);
+        // Comment out for now until endpoint is available
+        // const summary = await apiRequest(`/admin/reports/summary?start=${startDate}&end=${endDate}`);
+        // updateReportTable(summary);
+        
+        // Show empty table for now
+        updateReportTable([]);
         
     } catch (error) {
         console.error('Failed to load reports:', error);
@@ -845,11 +1261,17 @@ function animateNumber(element, target) {
 }
 
 function openModal(modalId) {
-    document.getElementById(modalId)?.classList.add('active');
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.add('active');
+    }
 }
 
 function closeModal(modalId) {
-    document.getElementById(modalId)?.classList.remove('active');
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.remove('active');
+    }
 }
 
 function logout() {
